@@ -6,53 +6,70 @@ import ThemeToggle from "../ThemeToggle.astro";
 const url = new URL(Astro.request.url);
 ---
 
-<header class="group relative mb-28 flex items-center sm:ps-[4.5rem]" id="main-header">
-	<div class="flex sm:flex-col">
+<header class="mb-28 flex items-center" id="main-header">
+	<div id="title-logo" class="flex items-center">
 		<a
 			aria-current={url.pathname === "/" ? "page" : false}
-			class="inline-flex items-center grayscale hover:filter-none sm:relative sm:inline-block"
+			class="flex grayscale hover:filter-none"
 			href="/"
 		>
 			<svg
-				aria-hidden="true"
-				class="me-3 h-10 w-6 sm:absolute sm:start-[-4.5rem] sm:me-0 sm:h-20 sm:w-12"
-				fill="none"
-				focusable="false"
-				viewBox="0 0 272 480"
+				id="logo"
+				class="left flex"
 				xmlns="http://www.w3.org/2000/svg"
+				width="75"
+				height="75"
+				viewBox="2 0 16 16"
 			>
-				<title>Logo</title>
+				<!-- Define Gradient for Hover -->
+				<defs>
+					<linearGradient id="defaultGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+						<stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1"></stop>
+						<stop offset="100%" style="stop-color:#2196F3;stop-opacity:1"></stop>
+					</linearGradient>
+					<linearGradient id="hoverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+						<stop offset="0%" style="stop-color:#FF5722;stop-opacity:1"></stop>
+						<stop offset="100%" style="stop-color:#FFC107;stop-opacity:1"></stop>
+					</linearGradient>
+				</defs>
+
+				<!-- Brackets with default gradient -->
 				<path
-					d="M181.334 93.333v-40L226.667 80v40l-45.333-26.667ZM136.001 53.333 90.667 26.667v426.666L136.001 480V53.333Z"
-					fill="#B04304"></path>
+					class="gradient"
+					fill="url(#defaultGradient)"
+					d="M2.1 3.1c0.2 1.3 0.4 1.6 0.4 2.9 0 0.8-1.5 1.5-1.5 1.5v1c0 0 1.5 0.7 1.5 1.5 0 1.3-0.2 1.6-0.4 2.9-0.3 2.1 0.8 3.1 1.8 3.1s2.1 0 2.1 0v-2c0 0-1.8 0.2-1.8-1 0-0.9 0.2-0.9 0.4-2.9 0.1-0.9-0.5-1.6-1.1-2.1 0.6-0.5 1.2-1.1 1.1-2-0.3-2-0.4-2-0.4-2.9 0-1.2 1.8-1.1 1.8-1.1v-2c0 0-1 0-2.1 0s-2.1 1-1.8 3.1z"
+				></path>
 				<path
-					d="m136.001 119.944 45.333-26.667 45.333 26.667-45.333 26.667-45.333-26.667ZM90.667 26.667 136.001 0l45.333 26.667-45.333 26.666-45.334-26.666ZM181.334 53.277l45.333-26.666L272 53.277l-45.333 26.667-45.333-26.667ZM0 213.277l45.333-26.667 45.334 26.667-45.334 26.667L0 213.277ZM136 239.944l-45.333-26.667v53.333L136 239.944Z"
-					fill="#FF5D01"></path>
-				<path
-					d="m136 53.333 45.333-26.666v120L226.667 120V80L272 53.333V160l-90.667 53.333v240L136 480V306.667L45.334 360V240l45.333-26.667v53.334L136 240V53.333Z"
-					fill="#53C68C"></path>
-				<path d="M45.334 240 0 213.334v120L45.334 360V240Z" fill="#B04304"></path>
+					class="gradient"
+					fill="url(#defaultGradient)"
+					d="M13.9 3.1c-0.2 1.3-0.4 1.6-0.4 2.9 0 0.8 1.5 1.5 1.5 1.5v1c0 0-1.5 0.7-1.5 1.5 0 1.3 0.2 1.6 0.4 2.9 0.3 2.1-0.8 3.1-1.8 3.1s-2.1 0-2.1 0v-2c0 0 1.8 0.2 1.8-1 0-0.9-0.2-0.9-0.4-2.9-0.1-0.9 0.5-1.6 1.1-2.1-0.6-0.5-1.2-1.1-1.1-2 0.2-2 0.4-2 0.4-2.9 0-1.2-1.8-1.1-1.8-1.1v-2c0 0 1 0 2.1 0s2.1 1 1.8 3.1z"
+				></path>
+
+				<!-- Rocket Emoji -->
+				<text x="8" y="8" font-size="10" text-anchor="middle" dominant-baseline="middle">🚀</text>
 			</svg>
-			<span class="text-xl font-bold sm:text-2xl">Astro Cactus</span>
 		</a>
-		<nav
-			aria-label="Main menu"
-			class="absolute -inset-x-4 top-14 hidden flex-col items-end gap-y-4 rounded-md bg-bgColor/[.85] py-4 text-accent shadow backdrop-blur group-[.menu-open]:z-50 group-[.menu-open]:flex sm:static sm:z-auto sm:-ms-4 sm:mt-1 sm:flex sm:flex-row sm:items-center sm:divide-x sm:divide-dashed sm:divide-accent sm:rounded-none sm:bg-transparent sm:py-0 sm:shadow-none sm:backdrop-blur-none"
-			id="navigation-menu"
-		>
-			{
-				menuLinks.map((link) => (
-					<a
-						aria-current={url.pathname === link.path ? "page" : false}
-						class="px-4 py-4 underline-offset-2 sm:py-0 sm:hover:underline"
-						data-astro-prefetch
-						href={link.path}
-					>
-						{link.title}
-					</a>
-				))
-			}
-		</nav>
+		<div class="ms-2 flex flex-col">
+			<span id="title-text" class="ms-2 flex text-xl font-bold sm:text-2xl">Oakley Hall</span>
+			<nav
+				aria-label="Main menu"
+				class="left flex rounded-md bg-bgColor/[.85] py-4 text-accent shadow backdrop-blur group-[.menu-open]:z-50 group-[.menu-open]:flex sm:static sm:z-auto sm:mt-1 sm:flex sm:flex-row sm:items-center sm:divide-x sm:divide-dashed sm:divide-accent sm:rounded-none sm:bg-transparent sm:py-0 sm:shadow-none sm:backdrop-blur-none"
+				id="navigation-menu"
+			>
+				{
+					menuLinks.map((link) => (
+						<a
+							aria-current={url.pathname === link.path ? "page" : false}
+							class="px-4 py-4 underline-offset-2 sm:py-0 sm:hover:underline"
+							data-astro-prefetch
+							href={link.path}
+						>
+							{link.title}
+						</a>
+					))
+				}
+			</nav>
+		</div>
 	</div>
 	<Search />
 	<ThemeToggle />
