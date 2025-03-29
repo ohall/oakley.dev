@@ -1,0 +1,77 @@
+/* Cosmic Background Text Styling */
+
+/* Apply text shadow to all text for better readability */
+body {
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+}
+
+/* Light theme text adjustments */
+:root[data-theme="light"] {
+  --text-shadow-color: rgba(0, 0, 0, 0.7);
+}
+
+/* Dark theme text adjustments */
+:root[data-theme="dark"] {
+  --text-shadow-color: rgba(0, 0, 0, 0.7);
+}
+
+/* Add backdrop to headings */
+h1, h2, h3, h4, h5, h6 {
+  display: inline-block;
+  position: relative;
+  z-index: 1;
+}
+
+h1::after, h2::after, h3::after, h4::after, h5::after, h6::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  border-radius: 4px;
+  z-index: -1;
+  padding: 0.25em 0.5em;
+  margin: -0.25em -0.5em;
+}
+
+/* Add text glow effect to certain elements */
+.title, h1, h2 {
+  text-shadow: 
+    0 0 5px var(--text-shadow-color),
+    0 0 10px rgba(76, 0, 153, 0.4);
+}
+
+/* Add semi-transparent backgrounds to main content areas */
+article, section, .card, .post-content, footer {
+  position: relative;
+}
+
+article::before, section::before, .card::before, .post-content::before, footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4); /* Reduced opacity from 0.6 to 0.4 */
+  backdrop-filter: blur(6px); /* Reduced blur for more visibility */
+  border-radius: 8px;
+  z-index: -1;
+}
+
+:root[data-theme="light"] article::before, 
+:root[data-theme="light"] section::before, 
+:root[data-theme="light"] .card::before, 
+:root[data-theme="light"] .post-content::before,
+:root[data-theme="light"] footer::before {
+  background: rgba(255, 255, 255, 0.5); /* Reduced opacity from 0.7 to 0.5 */
+}
+
+/* Add padding to content areas */
+article, section, .card, .post-content {
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
