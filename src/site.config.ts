@@ -39,6 +39,10 @@ export const menuLinks: { path: string; title: string }[] = [
 		path: "https://medium.com/@oakley349",
 		title: "Blog",
 	},
+	{
+		path: "/#live",
+		title: "Live",
+	},
 ];
 
 // https://expressive-code.com/reference/configuration/

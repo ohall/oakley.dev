@@ -1,12 +1,20 @@
 ---
 import SocialList from "@/components/SocialList.astro";
 import PageLayout from "@/layouts/Base.astro";
+import { Image } from "astro:assets";
+
+// Define interface for Medium post data
+interface MediumPost {
+  link: string;
+  title: string;
+  pubDate: string;
+}
 
 const mediumPosts = await fetch(
 	"https://api.rss2json.com/v1/api.json?rss_url=https://medium.com/feed/@oakley349",
 )
 	.then((res) => res.json())
-	.then((data) => data.items);
+	.then((data) => data.items as MediumPost[]);
 ---
 
 <PageLayout meta={{ title: "Home" }}>
@@ -17,19 +25,37 @@ const mediumPosts = await fetch(
 		</p>
 		<SocialList />
 	</section>
+	
 	<section aria-label="Blog post list" class="mt-16">
 		<h2 class="title mb-4 text-xl">Posts</h2>
 		<ul class="space-y-4">
 			{
-				mediumPosts.map((p: { link: string | URL | null | undefined; title: unknown }) => (
+				mediumPosts.map((p) => (
 					<li>
 						<span class="text-sm text-gray-500">{new Date(p.pubDate).toLocaleDateString()}</span>
 						<a class="cactus-link" data-astro-prefetch href={p.link}>
-							{p.title.length > 65 ? p.title.substring(0, 68 - 3) + "..." : p.title}
+							{p.title.length > 65 ? p.title.substring(0, 65) + "..." : p.title}
 						</a>
 					</li>
 				))
 			}
 		</ul>
+	</section>
+	
+	<section aria-label="Live events" class="mt-16" id="live">
+		<h2 class="title mb-4 text-xl">Live</h2>
+		<div class="rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 mb-4">
+			<img 
+				src="/leaddev2024.jpeg" 
+				alt="Oakley Hall hosting a session at LeadDev New York 2024" 
+				class="w-full"
+			/>
+			<div class="p-4">
+				<h3 class="font-semibold text-lg mb-2">Host of Next Steps AMA Session on Preparing for the Role of Principal Engineer at LeadDev NYC</h3>
+				<a href="https://lnkd.in/ez-wapXr" class="cactus-link" target="_blank" rel="noopener noreferrer">
+					Learn more
+				</a>
+			</div>
+		</div>
 	</section>
 </PageLayout>
