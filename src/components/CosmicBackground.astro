@@ -1,4 +1,5 @@
 ---
+// @ts-nocheck
 ---
 
 <div class="cosmic-background">
@@ -248,36 +249,114 @@
 </style>
 
 <script>
+  /* 
+   * @ts-nocheck
+   */
+  // Define star particle type
+  interface Star {
+    x: number;
+    y: number;
+    r: number;
+    theta: number;
+    armOffset: number;
+    orbitalSpeed: number;
+    isCoreStar: boolean;
+    color: string;
+    size: number;
+    brightness: number;
+    twinkleSpeed: number;
+    twinklePhase: number;
+    currentBrightness?: number;
+    originalX: number;
+    originalY: number;
+    velocityX: number;
+    velocityY: number;
+    mass: number;
+    interactStrength: number;
+  }
+
+  // Define dust particle type
+  interface DustParticle {
+    x: number;
+    y: number;
+    r: number;
+    theta: number;
+    color: string;
+    size: number;
+    orbitalSpeed: number;
+    originalX: number;
+    originalY: number;
+    velocityX: number;
+    velocityY: number;
+    mass: number;
+    interactStrength: number;
+  }
+
+  // Define explosion particle type
+  interface ExplosionParticle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    size: number;
+    color: string;
+    life: number;
+    maxLife: number;
+  }
+
+  // Define cursor update tracking
+  interface CursorUpdate {
+    time: number;
+    x: number;
+    y: number;
+  }
+
   // Class for creating the dynamic galaxy animation
   class GalaxyAnimation {
-    constructor(canvas) {
+    // Canvas properties
+    private canvas: HTMLCanvasElement;
+    private ctx: CanvasRenderingContext2D;
+    
+    // State arrays
+    private stars: Star[] = [];
+    private dustParticles: DustParticle[] = [];
+    private explosionParticles: ExplosionParticle[] = []; // For click explosion effect
+    
+    // Positioning
+    private centerX: number = 0;
+    private centerY: number = 0;
+    private canvasWidth: number = 0;
+    private canvasHeight: number = 0;
+    private galaxyRadius: number = 0;
+    
+    // Animation properties
+    private rotation: number = 0;
+    private rotationSpeed: number = 0.0001;
+    private spiral: number = 0;
+    private spiralDirection: number = 1;
+    private spiralSpeed: number = 0.00005;
+    private isDarkTheme: boolean;
+    private arms: number = 5; // Number of spiral arms
+    private armWidth: number = 0.4; // Width of the spiral arms
+    
+    // Mouse interaction properties
+    private mouseX: number = -1000; // Off-screen by default
+    private mouseY: number = -1000;
+    private mouseActive: boolean = false;
+    private mouseRadius: number = 150; // Mouse influence radius
+    private mouseForce: number = 1.0; // Strength of repulsion
+    private gravityStrength: number = 0.04; // How strongly particles are pulled back
+    private clickForce: number = 3.0; // Strength of click explosion
+    private lastCursorUpdate: CursorUpdate | null = null;
+    
+    // Touch properties
+    private touchStartX: number | undefined;
+    private touchStartY: number | undefined;
+
+    constructor(canvas: HTMLCanvasElement) {
       this.canvas = canvas;
-      this.ctx = canvas.getContext('2d');
-      this.stars = [];
-      this.dustParticles = [];
-      this.explosionParticles = []; // For click explosion effect
-      this.centerX = 0;
-      this.centerY = 0;
-      this.canvasWidth = 0;
-      this.canvasHeight = 0;
-      this.galaxyRadius = 0;
-      this.rotation = 0;
-      this.rotationSpeed = 0.0001;
-      this.spiral = 0;
-      this.spiralDirection = 1;
-      this.spiralSpeed = 0.00005;
+      this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
       this.isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
-      this.arms = 5; // Number of spiral arms
-      this.armWidth = 0.4; // Width of the spiral arms
-      
-      // Mouse interaction properties
-      this.mouseX = -1000; // Off-screen by default
-      this.mouseY = -1000;
-      this.mouseActive = false;
-      this.mouseRadius = 150; // Mouse influence radius
-      this.mouseForce = 1.0; // Strength of repulsion
-      this.gravityStrength = 0.04; // How strongly particles are pulled back
-      this.clickForce = 3.0; // Strength of click explosion
 
       this.updateCanvasSize();
       this.generateStars();
@@ -899,6 +978,76 @@
       }
     }
     
+    // Apply scroll-based explosion to stars and dust
+    applyScrollExplosion(x, y, direction, scrollForce) {
+      // Local coordinates relative to canvas
+      const localX = x - this.centerX;
+      const localY = y - this.centerY;
+      
+      // Create visual explosion particles
+      this.createExplosion(localX, localY);
+      
+      // Calculate vertical force vector based on scroll direction
+      // (positive direction = scrolling down, particles should move away from bottom center)
+      const verticalBias = direction * 2; // Stronger vertical influence
+      
+      // Apply force to stars - with stronger directional push
+      for (let i = 0; i < this.stars.length; i++) {
+        const star = this.stars[i];
+        
+        // Calculate distance from scroll center point
+        const dx = star.x - localX;
+        const dy = star.y - localY;
+        const distanceSquared = dx * dx + dy * dy;
+        const distance = Math.sqrt(distanceSquared);
+        
+        // Use much larger influence radius for scroll effect
+        const influenceRadius = this.mouseRadius * 3;
+        
+        // If within influence radius, apply explosion force
+        if (distance < influenceRadius) {
+          // Calculate force (stronger for closer stars and faster scrolling)
+          const force = (1 - distance / influenceRadius) * this.clickForce * scrollForce * star.interactStrength;
+          
+          // Apply directional force based on scroll direction (with some horizontal spread)
+          const normalizedDx = dx / (distance || 1); // Avoid division by zero
+          const normalizedDy = dy / (distance || 1) + verticalBias; // Add bias based on scroll direction
+          
+          // Apply force to velocity (normalized direction * force / mass)
+          star.velocityX += normalizedDx * force / star.mass;
+          star.velocityY += normalizedDy * force / star.mass * 1.5; // Stronger vertical force
+        }
+      }
+      
+      // Apply force to dust particles - more exaggerated effect for dust
+      for (let i = 0; i < this.dustParticles.length; i++) {
+        const dust = this.dustParticles[i];
+        
+        // Calculate distance from scroll center point
+        const dx = dust.x - localX;
+        const dy = dust.y - localY;
+        const distanceSquared = dx * dx + dy * dy;
+        const distance = Math.sqrt(distanceSquared);
+        
+        // Even larger influence radius for dust
+        const influenceRadius = this.mouseRadius * 4;
+        
+        // If within influence radius, apply explosion force
+        if (distance < influenceRadius) {
+          // Calculate force (stronger for closer dust and faster scrolling)
+          const force = (1 - distance / influenceRadius) * this.clickForce * scrollForce * 2 * dust.interactStrength;
+          
+          // Apply directional force based on scroll direction
+          const normalizedDx = dx / (distance || 1); // Avoid division by zero
+          const normalizedDy = dy / (distance || 1) + verticalBias * 1.5; // Stronger vertical bias for dust
+          
+          // Apply force to velocity (normalized direction * force / mass)
+          dust.velocityX += normalizedDx * force / dust.mass;
+          dust.velocityY += normalizedDy * force / dust.mass * 2; // Much stronger vertical effect
+        }
+      }
+    }
+    
     // Apply click explosion force to stars and dust
     applyClickExplosion(x, y) {
       // Local coordinates relative to canvas
@@ -964,14 +1113,53 @@
       }
     }
     
-    // Setup mouse interaction
+    // Setup interaction events
     setupMouseInteraction() {
-      // Mouse events
-      this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
-      this.canvas.addEventListener('mouseenter', this.handleMouseEnter.bind(this));
-      this.canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
+      // Track scroll position to create explosion effect
+      let lastScrollY = window.scrollY;
+      let scrollTimeout = null;
+      let scrollDirection = 0;
       
-      // Click/tap events
+      // Add scroll event listener
+      window.addEventListener('scroll', () => {
+        // Determine scroll direction and distance
+        const currentScrollY = window.scrollY;
+        const scrollDiff = currentScrollY - lastScrollY;
+        scrollDirection = scrollDiff > 0 ? 1 : -1;
+        
+        // Only trigger effect if scrolling a meaningful amount
+        if (Math.abs(scrollDiff) > 30) {
+          // Calculate position for the explosion (centered horizontally, at current viewport center)
+          const viewportHeight = window.innerHeight;
+          const viewportWidth = window.innerWidth;
+          
+          const rect = this.canvas.getBoundingClientRect();
+          const x = viewportWidth / 2 - rect.left;
+          const y = viewportHeight / 2 - rect.top + (scrollDirection * 100);
+          
+          // Apply explosion effect (stronger for faster scrolling)
+          const scrollForce = Math.min(Math.abs(scrollDiff) / 10, 5);
+          this.applyScrollExplosion(x, y, scrollDirection, scrollForce);
+          
+          // Update last scroll position
+          lastScrollY = currentScrollY;
+          
+          // Clear existing timeout
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+          }
+          
+          // Set timeout to reset stars gradually after scrolling stops
+          scrollTimeout = setTimeout(() => {
+            this.mouseActive = false;
+          }, 300);
+          
+          // Make stars interactive while scrolling
+          this.mouseActive = true;
+        }
+      }, { passive: true });
+      
+      // Keep click explosion for direct interaction
       this.canvas.addEventListener('click', (e) => {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -981,58 +1169,25 @@
       
       // Document mouse handling for cursor
       document.addEventListener('mousemove', (e) => {
-        // Only update cursor position if not over canvas
-        if (!this.mouseActive) {
-          this.updateCustomCursor(e.clientX, e.clientY);
-        }
+        this.updateCustomCursor(e.clientX, e.clientY);
       });
       
       // Touch events
-      this.canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        if (e.touches.length > 0) {
-          const rect = this.canvas.getBoundingClientRect();
-          this.mouseX = e.touches[0].clientX - rect.left;
-          this.mouseY = e.touches[0].clientY - rect.top;
-          this.mouseActive = true;
-          
-          // Update cursor for touch as well
-          this.updateCustomCursor(e.touches[0].clientX, e.touches[0].clientY);
-        }
-      });
-      
-      this.canvas.addEventListener('touchstart', (e) => {
-        if (e.touches.length > 0) {
-          this.handleMouseEnter();
-          // Store touch position for potential tap
-          this.touchStartX = e.touches[0].clientX;
-          this.touchStartY = e.touches[0].clientY;
-        }
-      });
-      
       this.canvas.addEventListener('touchend', (e) => {
-        // Check if this was a tap (no significant movement)
-        if (this.touchStartX !== undefined && this.touchStartY !== undefined) {
+        if (e.touches.length > 0) {
           const rect = this.canvas.getBoundingClientRect();
-          const x = this.touchStartX - rect.left;
-          const y = this.touchStartY - rect.top;
+          const x = e.touches[0].clientX - rect.left;
+          const y = e.touches[0].clientY - rect.top;
           this.applyClickExplosion(x, y);
-          
-          // Clear touch start position
-          this.touchStartX = undefined;
-          this.touchStartY = undefined;
         }
-        
-        this.mouseActive = false;
-        this.handleMouseLeave();
       });
     }
   }
 
   // Initialize and set up animation
   document.addEventListener('DOMContentLoaded', () => {
-    const galaxyCanvas = document.querySelector('.galaxy-canvas');
-    let galaxyAnimation = null;
+    const galaxyCanvas = document.querySelector('.galaxy-canvas') as HTMLCanvasElement | null;
+    let galaxyAnimation: GalaxyAnimation | null = null;
     
     // Check for browser support and performance
     if (
@@ -1047,13 +1202,15 @@
       
       // Handle window resize
       window.addEventListener('resize', () => {
-        galaxyAnimation.handleResize();
+        if (galaxyAnimation) {
+          galaxyAnimation.handleResize();
+        }
       });
       
       // Detect theme changes and update
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-          if (mutation.attributeName === 'data-theme') {
+          if (mutation.attributeName === 'data-theme' && galaxyAnimation) {
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
             galaxyAnimation.updateTheme(isDark);
           }
