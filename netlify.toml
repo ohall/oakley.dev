@@ -1,2 +1,5 @@
 [build]
-  command = 'pnpm build'
+  command = 'npm install sharp && pnpm netlify:build'
+  
+[build.environment]
+  SHARP_IGNORE_GLOBAL_LIBVIPS = "1"
