@@ -16,8 +16,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     z-index: -1;
     overflow: hidden;
     background: radial-gradient(ellipse at center, 
@@ -41,14 +41,19 @@
   
   .custom-cursor {
     position: fixed;
-    font-size: 32px;
+    font-size: 24px;
     pointer-events: none;
     transform: translate(-50%, -50%) rotate(0deg);
     z-index: 19;
     opacity: 0;
     text-shadow: 0 0 10px rgba(100, 200, 255, 0.8), 
                  0 0 20px rgba(120, 210, 255, 0.5);
-    transition: opacity 0.2s, text-shadow 0.2s;
+    @media (min-width: 640px) {
+      font-size: 32px;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s, text-shadow 0.2s;
+    }
+    /* Slower transition for mobile */
+    transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s, text-shadow 0.3s;
     will-change: transform, opacity, text-shadow, font-size;
     display: flex;
     align-items: center;
@@ -311,7 +316,11 @@
     
     // Create stars with positions and properties
     function createStars() {
-      const starCount = Math.min(2000, Math.floor(width * height / 2200));
+      // Reduce star count on mobile for better performance
+      const isMobile = window.innerWidth < 640;
+      const starCount = isMobile 
+        ? Math.min(800, Math.floor(width * height / 4000))
+        : Math.min(2000, Math.floor(width * height / 2200));
       stars = [];
       
       const galaxyRadius = Math.min(width, height) * 0.4;
@@ -430,7 +439,11 @@
     
     // Create dust particles
     function createDust() {
-      const dustCount = Math.floor(width * height / 12000);
+      // Reduce dust count on mobile for better performance
+      const isMobile = window.innerWidth < 640;
+      const dustCount = isMobile
+        ? Math.floor(width * height / 20000)
+        : Math.floor(width * height / 12000);
       dust = [];
       
       const galaxyRadius = Math.min(width, height) * 0.4;
@@ -898,8 +911,25 @@
     function animate() {
       // For smoother performance
       if (!document.hidden) {
-        updateStars();
-        drawGalaxy();
+        // Optimize performance on mobile
+        const isMobile = window.innerWidth < 640;
+        if (isMobile) {
+          // On mobile, only update when touching or recently touched
+          if (isTouching || (mouseActive && Date.now() - mouseLastMoved < 1000)) {
+            // Always update during active touch
+            updateStars();
+            drawGalaxy();
+          } else {
+            // When not touching, update less frequently
+            if (Math.random() < 0.4) { // Only update ~40% of frames
+              updateStars();
+              drawGalaxy();
+            }
+          }
+        } else {
+          updateStars();
+          drawGalaxy();
+        }
       }
       
       // Always request the next frame immediately
@@ -933,12 +963,218 @@
     let mouseMoving = false;
     let mouseMoveTimeout = null;
     
-    // Variables to track mouse movement for cursor rotation
+    // Variables to track mouse/touch movement for cursor rotation
     let prevMouseX = 0;
     let prevMouseY = 0;
     let lastValidDx = 0;
     let lastValidDy = 0;
     let rocketAngle = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isTouching = false;
+    let touchTimeout = null;
+    
+    // Handle touch events for mobile
+    document.addEventListener('touchstart', function(e) {
+      if (!cursor) return;
+      
+      // Reset transition to initial state for new touch
+      cursor.style.transition = "transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s, text-shadow 0.3s";
+      
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      isTouching = true;
+      
+      // Reset rocket and tracking variables
+      rocketX = touch.clientX;
+      rocketY = touch.clientY;
+      lastTouchX = touch.clientX;
+      lastTouchY = touch.clientY;
+      touchVelocityX = 0;
+      touchVelocityY = 0;
+      
+      // Position cursor at touch point initially but slightly above
+      cursor.style.left = `${touch.clientX}px`;
+      cursor.style.top = `${touch.clientY - 30}px`; // Start slightly above touch point
+      cursor.style.opacity = '0.3'; // Start semi-transparent
+      
+      // Float down to touch point with animation
+      setTimeout(() => {
+        cursor.style.opacity = '1';
+        cursor.style.top = `${touch.clientY}px`;
+        // Reset the transform to avoid conflict with previous transitions
+        cursor.style.transform = `translate(-50%, -50%) rotate(${Math.random() > 0.5 ? 30 : -30}deg)`;
+      }, 50);
+      
+      // Calculate canvas-relative touch position for star effects
+      const rect = canvas.getBoundingClientRect();
+      mouseX = touch.clientX - rect.left;
+      mouseY = touch.clientY - rect.top;
+      mouseActive = true;
+      mouseMoving = true;
+      mouseLastMoved = Date.now();
+      
+      // Clear any existing timeout
+      clearTimeout(touchTimeout);
+      
+      // Ensure animation is running during touch interaction
+      ensureAnimationRunning();
+    });
+    
+    // Variables for touch tracking
+    let rocketX = 0;
+    let rocketY = 0;
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+    let touchVelocityX = 0;
+    let touchVelocityY = 0;
+    
+    document.addEventListener('touchmove', function(e) {
+      if (!cursor || !isTouching) return;
+      
+      const touch = e.touches[0];
+      
+      // Update last touch position for tracking
+      if (lastTouchX === 0) {
+        lastTouchX = touch.clientX;
+        lastTouchY = touch.clientY;
+        rocketX = touch.clientX;
+        rocketY = touch.clientY;
+      }
+      
+      // Calculate movement direction and speed
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+      const distance = Math.sqrt(dx*dx + dy*dy);
+      
+      // Calculate touch velocity for trailing effect
+      touchVelocityX = (touch.clientX - lastTouchX) * 0.2;
+      touchVelocityY = (touch.clientY - lastTouchY) * 0.2;
+      
+      // Update last touch position
+      lastTouchX = touch.clientX;
+      lastTouchY = touch.clientY;
+      
+      // Smooth rocket position - follows touch with lag
+      rocketX = rocketX * 0.8 + touch.clientX * 0.2;
+      rocketY = rocketY * 0.8 + touch.clientY * 0.2;
+      
+      if (distance > 5) {
+        // Store last valid movement direction
+        lastValidDx = dx;
+        lastValidDy = dy;
+        
+        // Calculate angle based on touch velocity for smoother rotation
+        const moveAngle = Math.atan2(touchVelocityY, touchVelocityX);
+        const targetAngle = moveAngle * (180 / Math.PI) + 90;
+        
+        // Smooth angle changes
+        rocketAngle = rocketAngle * 0.85 + targetAngle * 0.15;
+        
+        // Calculate trailing position - rocket follows behind touch point with velocity influence
+        let trailX = rocketX + touchVelocityX * 2;
+        let trailY = rocketY + touchVelocityY * 2;
+        
+        // Apply rocket position and rotation with smooth animation
+        cursor.style.left = `${trailX}px`;
+        cursor.style.top = `${trailY}px`;
+        cursor.style.transform = `translate(-50%, -50%) rotate(${rocketAngle}deg)`;
+        
+        // Calculate speed for glow effect - based on actual touch movement speed
+        const moveSpeed = Math.sqrt(touchVelocityX*touchVelocityX + touchVelocityY*touchVelocityY);
+        const speedFactor = Math.min(1, moveSpeed / 5);
+        
+        // Adjust glow based on speed
+        const glowIntensity = 8 + speedFactor * 15;
+        cursor.style.textShadow = `0 0 ${glowIntensity}px rgba(80, 180, 255, 0.8), 
+                                  0 0 ${glowIntensity * 1.5}px rgba(120, 210, 255, 0.5)`;
+        
+        // Add size boost for faster movements - more subtle
+        cursor.style.fontSize = `${Math.round(24 + speedFactor * 6)}px`;
+        
+        // Update canvas-relative position for star effects
+        const rect = canvas.getBoundingClientRect();
+        mouseX = touch.clientX - rect.left;
+        mouseY = touch.clientY - rect.top;
+        mouseLastMoved = Date.now();
+      }
+    });
+    
+    document.addEventListener('touchend', function() {
+      if (!cursor) return;
+      isTouching = false;
+      
+      // Continue moving in the last direction with momentum
+      const continueMomentum = function() {
+        if (!isTouching && touchVelocityX !== 0 && touchVelocityY !== 0) {
+          // Get current position
+          const currentX = parseFloat(cursor.style.left) || rocketX;
+          const currentY = parseFloat(cursor.style.top) || rocketY;
+          
+          // Gradually reduce velocity (drag)
+          touchVelocityX *= 0.95;
+          touchVelocityY *= 0.95;
+          
+          // Update position with momentum
+          const newX = currentX + touchVelocityX;
+          const newY = currentY + touchVelocityY;
+          
+          // Update cursor position
+          cursor.style.left = `${newX}px`;
+          cursor.style.top = `${newY}px`;
+          
+          // Continue momentum until velocity becomes very small
+          if (Math.abs(touchVelocityX) > 0.1 || Math.abs(touchVelocityY) > 0.1) {
+            requestAnimationFrame(continueMomentum);
+          } else {
+            // When momentum stops, fade out rocket
+            fadeOutRocket();
+          }
+        }
+      };
+      
+      // Start momentum effect
+      requestAnimationFrame(continueMomentum);
+      
+      // Function to fade out rocket after momentum ends
+      const fadeOutRocket = function() {
+        // Keep rocket visible for a short time after touch
+        touchTimeout = setTimeout(function() {
+          // Add a fly-away effect when touch ends
+          if (lastValidDx !== 0 || lastValidDy !== 0) {
+            const angle = Math.atan2(lastValidDy, lastValidDx);
+            const currentX = parseFloat(cursor.style.left) || rocketX;
+            const currentY = parseFloat(cursor.style.top) || rocketY;
+            const flyAwayX = currentX + Math.cos(angle) * 200;
+            const flyAwayY = currentY + Math.sin(angle) * 200;
+            
+            // Apply slow fade-out with transition
+            cursor.style.transition = "transform 1.2s ease-out, opacity 0.8s ease-out";
+            cursor.style.left = `${flyAwayX}px`;
+            cursor.style.top = `${flyAwayY}px`;
+            cursor.style.opacity = '0';
+            
+            // Trigger gravitational pull for stars
+            mouseJustStopped = true;
+            mouseMoving = false;
+            
+            // Reset touch state variables
+            lastTouchX = 0;
+            lastTouchY = 0;
+            touchVelocityX = 0;
+            touchVelocityY = 0;
+            
+            // Reset mouse position to remove influence after animation completes
+            setTimeout(() => {
+              mouseX = -1000;
+              mouseY = -1000;
+              mouseActive = false;
+            }, 800);
+          }
+        }, 100);
+      };
+    });
     
     // Mouse move for cursor effect and star interaction
     document.addEventListener('mousemove', function(e) {
@@ -1032,8 +1268,8 @@
     
     // Mouse leave - reset interaction and trigger gravity return
     document.addEventListener('mouseleave', function() {
-      // Hide rocket cursor with a nice fade
-      if (cursor) {
+      // Don't hide the cursor on mobile - only hide it on desktop
+      if (cursor && window.innerWidth >= 640) {
         // Add a bit of a fly-away effect when leaving
         cursor.style.transition = "opacity 0.5s, transform 0.5s";
         
@@ -1051,7 +1287,7 @@
         
         // Reset transition after the animation
         setTimeout(() => {
-          cursor.style.transition = "opacity 0.2s, text-shadow 0.2s";
+          cursor.style.transition = "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s, text-shadow 0.2s";
         }, 500);
       }
       
