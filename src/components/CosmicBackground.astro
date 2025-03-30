@@ -529,49 +529,107 @@
       }
     }
 
-    // Create explosion particles at position
-    createExplosion(x, y, particleCount = 50) {
+    // Create more subtle celestial effect particles
+    createCelestialEffect(x, y, particleCount = 20, direction = 0) {
+      // Add subtle space-like particles
+      for (let i = 0; i < particleCount; i++) {
+        // Spiral pattern for celestial feel
+        const spiralTightness = 0.2 + Math.random() * 0.3;
+        const spiralAngle = i / particleCount * Math.PI * (4 + Math.random() * 2);
+        const distanceFromCenter = 3 + Math.random() * 10 * (1 - i / particleCount);
+        
+        const angle = spiralAngle + Math.random() * 0.2 - 0.1;
+        
+        // Gentler speed for cosmic feel
+        const baseSpeed = Math.random() * 2 + 0.8;
+        const speed = baseSpeed * (1 - i / particleCount * 0.5); // Slower particles farther out
+        
+        // Calculate velocity components with some directional bias
+        const directionBias = direction * 0.3; // Subtle direction based on scroll
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed + directionBias;
+        
+        // Small particles for star-like effect
+        const size = Math.random() * 1.2 + 0.3;
+        
+        // Celestial color palette - predominantly blues and whites
+        let hue, saturation, lightness, opacity;
+        
+        const colorType = Math.random();
+        if (colorType < 0.6) { // Predominantly blue/white stars
+          hue = Math.floor(Math.random() * 40) + 200; // 200-240: blue range
+          saturation = Math.floor(Math.random() * 40) + 10; // 10-50%: less saturated
+          lightness = Math.floor(Math.random() * 20) + 75; // 75-95%: bright stars
+          opacity = Math.random() * 0.4 + 0.6; // 0.6-1.0: semi-transparent
+        } else if (colorType < 0.9) { // Some subtle purples
+          hue = Math.floor(Math.random() * 40) + 250; // 250-290: purple range
+          saturation = Math.floor(Math.random() * 20) + 10; // 10-30%: very desaturated
+          lightness = Math.floor(Math.random() * 15) + 75; // 75-90%: bright
+          opacity = Math.random() * 0.3 + 0.6; // 0.6-0.9: more transparent
+        } else { // Few faint red/yellow (distant stars or dust)
+          hue = Math.floor(Math.random() * 60) + 10; // 10-70: red to yellow
+          saturation = Math.floor(Math.random() * 20) + 20; // 20-40%: desaturated
+          lightness = Math.floor(Math.random() * 15) + 75; // 75-90%: bright
+          opacity = Math.random() * 0.3 + 0.3; // 0.3-0.6: quite transparent
+        }
+        
+        // Longer lifespans for slower, gentler effect
+        const baseLife = Math.random() * 80 + 60; // 60-140: longer lived
+        const life = baseLife * (1 + Math.sin(i / particleCount * Math.PI) * 0.2);
+        
+        // Calculate position with spiral pattern
+        const particleX = x + Math.cos(spiralAngle) * distanceFromCenter;
+        const particleY = y + Math.sin(spiralAngle) * distanceFromCenter;
+        
+        this.explosionParticles.push({
+          x: particleX,
+          y: particleY,
+          vx,
+          vy,
+          size,
+          color: `hsla(${hue}, ${saturation}%, ${lightness}%, ${opacity})`,
+          life,
+          maxLife: life,
+        });
+      }
+    }
+    
+    // Create explosion particles at position (used for click effects)
+    createExplosion(x, y, particleCount = 30) {
       // Add variation based on direction and intensity
       for (let i = 0; i < particleCount; i++) {
-        // Random direction with some variation based on position in explosion
+        // Random direction with some variation
         const angle = Math.random() * Math.PI * 2;
         
-        // Higher speed for more dramatic effect
-        const baseSpeed = Math.random() * 7 + 3;
-        const speedVariation = 1 + Math.sin(i / particleCount * Math.PI * 2) * 0.5;
-        const speed = baseSpeed * speedVariation;
+        // Moderate speed for subtle effect
+        const baseSpeed = Math.random() * 4 + 2;
+        const speed = baseSpeed * (1 - i / particleCount * 0.3);
         
         // Calculate velocity components
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
         
-        // Size varies with larger explosions
-        const size = Math.random() * 2.5 + 0.5;
+        // Smaller particles for star-like effect
+        const size = Math.random() * 1.8 + 0.4;
         
-        // More varied color spectrum for visual interest
-        // First 30% of particles are cyan/blue, next 40% are purple, last 30% are orange/yellow for contrast
+        // Celestial color palette - predominantly blues and purples
         let hue, saturation, lightness;
         
-        if (i < particleCount * 0.3) {
-          // Blue/cyan particles
-          hue = Math.floor(Math.random() * 40) + 180; // 180-220
-          saturation = Math.floor(Math.random() * 30) + 70; // 70-100%
-          lightness = Math.floor(Math.random() * 15) + 75; // 75-90%
-        } else if (i < particleCount * 0.7) {
-          // Purple/pink particles
-          hue = Math.floor(Math.random() * 60) + 260; // 260-320
-          saturation = Math.floor(Math.random() * 30) + 70; // 70-100%
-          lightness = Math.floor(Math.random() * 15) + 75; // 75-90%
+        if (i < particleCount * 0.7) {
+          // Mostly blue/cyan particles for celestial feel
+          hue = Math.floor(Math.random() * 40) + 190; // 190-230: blue to cyan
+          saturation = Math.floor(Math.random() * 40) + 30; // 30-70%
+          lightness = Math.floor(Math.random() * 15) + 80; // 80-95%: bright
         } else {
-          // Yellow/orange particles for contrast
-          hue = Math.floor(Math.random() * 60) + 30; // 30-90
-          saturation = Math.floor(Math.random() * 30) + 70; // 70-100%
+          // Some subtle purple/violet particles
+          hue = Math.floor(Math.random() * 40) + 250; // 250-290: purple range
+          saturation = Math.floor(Math.random() * 30) + 20; // 20-50%
           lightness = Math.floor(Math.random() * 15) + 75; // 75-90%
         }
         
-        // Varied lifespans for more natural fading
-        const baseLife = Math.random() * 60 + 40; // 40-100
-        const life = baseLife * (1 + Math.sin(i / particleCount * Math.PI) * 0.3); // Add some wave pattern
+        // Varied lifespans for natural fading
+        const baseLife = Math.random() * 50 + 30; // 30-80
+        const life = baseLife * (1 - i / particleCount * 0.2);
         
         this.explosionParticles.push({
           x,
@@ -579,9 +637,9 @@
           vx,
           vy,
           size,
-          color: `hsla(${hue}, ${saturation}%, ${lightness}%, 1)`,
-          life, // How long the particle lives
-          maxLife: life, // Maximum life value for fade calculation
+          color: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.9)`,
+          life,
+          maxLife: life,
         });
       }
     }
@@ -1003,21 +1061,21 @@
       }
     }
     
-    // Apply scroll-based explosion to stars and dust
+    // Apply scroll-based distortion to stars and dust
     applyScrollExplosion(x, y, direction, scrollForce) {
       // Local coordinates relative to canvas
       const localX = x - this.centerX;
       const localY = y - this.centerY;
       
-      // Create visual explosion particles (more for stronger explosions)
-      const particleCount = Math.min(Math.floor(scrollForce * 10), 100);
-      this.createExplosion(localX, localY, particleCount);
+      // Create subtle celestial effect (fewer particles for celestial feel)
+      const particleCount = Math.min(Math.floor(scrollForce * 6), 25);
+      this.createCelestialEffect(localX, localY, particleCount, direction);
       
-      // Calculate vertical force vector based on scroll direction
-      // (positive direction = scrolling down, particles should move away from bottom center)
-      const verticalBias = direction * 3; // Even stronger vertical influence
+      // Calculate vertical force vector based on scroll direction with gentler bias
+      // (for more subtle celestial movement rather than explosive)
+      const verticalBias = direction * 1.2; // More gentle vertical influence for celestial feel
       
-      // Apply force to stars - with stronger directional push
+      // Apply gentler force to stars - more celestial flow than explosion
       for (let i = 0; i < this.stars.length; i++) {
         const star = this.stars[i];
         
@@ -1027,28 +1085,33 @@
         const distanceSquared = dx * dx + dy * dy;
         const distance = Math.sqrt(distanceSquared);
         
-        // Use much larger influence radius for scroll effect
-        // Scale the radius with scroll force for more dramatic effect
-        const influenceRadius = this.mouseRadius * (2 + scrollForce * 0.5);
+        // Use wider influence radius for flowing effect
+        // Scale the radius with scroll force for more gradual effect
+        const influenceRadius = this.mouseRadius * (3 + scrollForce * 0.3);
         
-        // If within influence radius, apply explosion force
+        // If within influence radius, apply flowing force
         if (distance < influenceRadius) {
-          // Calculate force with more dramatic falloff for creative patterns
-          // Closer stars react more dramatically to create visual interest
-          const distanceFactor = Math.pow(1 - distance / influenceRadius, 1.5);
-          const force = distanceFactor * this.clickForce * scrollForce * star.interactStrength;
+          // Calculate force with smoother falloff for celestial patterns
+          // Use sine curve for more natural falloff
+          const angle = (1 - distance / influenceRadius) * Math.PI;
+          const distanceFactor = Math.sin(angle) * 0.8;
+          const force = distanceFactor * this.clickForce * scrollForce * 0.7 * star.interactStrength;
           
-          // Apply directional force based on scroll direction with outward explosion
-          const normalizedDx = dx / (distance || 1); // Avoid division by zero
-          const normalizedDy = dy / (distance || 1) + verticalBias; // Add bias based on scroll direction
+          // Calculate swirl effect for more cosmic motion
+          const swirlFactor = 0.6;
+          const swirlAngle = Math.atan2(dy, dx) + (Math.PI / 2) * direction * swirlFactor;
           
-          // Apply force to velocity (normalized direction * force / mass)
-          star.velocityX += normalizedDx * force / star.mass * 1.5; // Stronger overall force
-          star.velocityY += normalizedDy * force / star.mass * 2; // Even stronger vertical force
+          // Apply directional force with swirl component
+          const normalizedDx = Math.cos(swirlAngle) + dx / (distance * 5 || 1); 
+          const normalizedDy = Math.sin(swirlAngle) + (dy / (distance * 5 || 1) + verticalBias);
+          
+          // Apply gentler force to velocity
+          star.velocityX += normalizedDx * force / star.mass * 0.8;
+          star.velocityY += normalizedDy * force / star.mass * 1.2;
         }
       }
       
-      // Apply force to dust particles - more exaggerated effect for dust
+      // Apply similar effect to dust particles but with different pattern
       for (let i = 0; i < this.dustParticles.length; i++) {
         const dust = this.dustParticles[i];
         
@@ -1058,23 +1121,25 @@
         const distanceSquared = dx * dx + dy * dy;
         const distance = Math.sqrt(distanceSquared);
         
-        // Even larger influence radius for dust
-        const influenceRadius = this.mouseRadius * (4 + scrollForce * 0.8);
+        // Even larger influence radius for dust - cosmic nebula feel
+        const influenceRadius = this.mouseRadius * (5 + scrollForce * 0.4);
         
-        // If within influence radius, apply explosion force
+        // If within influence radius, apply gentle force
         if (distance < influenceRadius) {
-          // Calculate force (stronger for closer dust and faster scrolling)
-          // Use quadratic falloff for more dramatic visual effect
-          const distanceFactor = Math.pow(1 - distance / influenceRadius, 2);
-          const force = distanceFactor * this.clickForce * scrollForce * 3 * dust.interactStrength;
+          // Calculate force with gentler cosmic nebula effect
+          const distanceFactor = 0.5 * (1 + Math.cos(Math.PI * distance / influenceRadius));
+          const force = distanceFactor * this.clickForce * scrollForce * 1.8 * dust.interactStrength;
           
-          // Apply directional force based on scroll direction
-          const normalizedDx = dx / (distance || 1); // Avoid division by zero
-          const normalizedDy = dy / (distance || 1) + verticalBias * 2; // Even stronger vertical bias for dust
+          // Calculate cosmic flow - dust moves in slightly different pattern than stars
+          const flowAngle = Math.atan2(dy, dx) + (Math.PI / 3) * direction;
           
-          // Apply force to velocity (normalized direction * force / mass)
-          dust.velocityX += normalizedDx * force / dust.mass * 1.5;
-          dust.velocityY += normalizedDy * force / dust.mass * 3; // Much stronger vertical effect
+          // Apply directional force with flow component
+          const normalizedDx = Math.cos(flowAngle) * 0.7 + dx / (distance * 8 || 1);
+          const normalizedDy = Math.sin(flowAngle) * 0.7 + (dy / (distance * 8 || 1) + verticalBias * 0.8);
+          
+          // Apply gentle force to create flowing nebula effect
+          dust.velocityX += normalizedDx * force / dust.mass * 0.8;
+          dust.velocityY += normalizedDy * force / dust.mass * 1.4;
         }
       }
     }
@@ -1155,40 +1220,72 @@
       let scrollDetectionTimeout = null;
       let lastExplosionTime = 0;
       
-      // Function to create massive explosion at start of scrolling
-      const createScrollStartExplosion = () => {
+      // Function to create cosmic flow at start of scrolling
+      const createCelestialScrollEffect = () => {
         const viewportHeight = window.innerHeight;
         const viewportWidth = window.innerWidth;
         const rect = this.canvas.getBoundingClientRect();
         
-        // Number of explosions based on viewport size
-        const numExplosions = Math.floor((viewportWidth / 500) * 3) + 2;
+        // Number of celestial flows based on viewport size
+        const numFlows = Math.floor((viewportWidth / 500) * 2) + 1;
         
-        // Create primary explosion at center
+        // Create primary flow pattern at center
         const centerX = viewportWidth / 2 - rect.left;
-        const centerY = viewportHeight / 2 - rect.top;
+        const centerY = viewportHeight / 2 - rect.top + (scrollDirection * viewportHeight * 0.1);
         
-        // Apply primary explosion (stronger at center)
-        this.applyScrollExplosion(centerX, centerY, scrollDirection, 10);
+        // Apply primary celestial distortion (gentler force)
+        this.applyScrollExplosion(centerX, centerY, scrollDirection, 5);
         
-        // Create additional explosions radiating from center
-        for (let i = 0; i < numExplosions; i++) {
-          // Calculate positions in a circular pattern
-          const angle = (i / numExplosions) * Math.PI * 2;
-          const distance = viewportHeight * 0.3; // 30% of viewport height from center
+        // Create additional subtle flows in a gentle pattern
+        for (let i = 0; i < numFlows; i++) {
+          // Calculate positions in an arc pattern in the direction of scroll
+          const arcSpread = Math.PI * 0.7; // 126 degrees arc
+          const arcStart = -Math.PI * 0.35 + (scrollDirection < 0 ? Math.PI : 0); // Different arc based on direction
+          const angle = arcStart + (i / numFlows) * arcSpread;
+          
+          // Position more flows in scroll direction for natural feel
+          const distance = viewportHeight * (0.2 + Math.random() * 0.1);
           
           const xPos = centerX + Math.cos(angle) * distance;
           const yPos = centerY + Math.sin(angle) * distance;
           
-          // Apply explosions with decreasing force and increasing delay
+          // Apply gentle celestial effects with varied timing
           setTimeout(() => {
-            const force = 8 - (i * 0.5);
+            const force = 3 - (i * 0.4); // Gentler forces
             this.applyScrollExplosion(xPos, yPos, scrollDirection, force);
-          }, i * 70);
+          }, i * 100 + Math.random() * 50);
         }
       };
       
-      // Add scroll event listener
+      // Add scroll event listener with requestAnimationFrame to ensure smooth animation
+      let animationFrameId = null;
+      let isScrollAnimating = false;
+      
+      // Function to ensure animate() keeps running during scroll
+      const ensureAnimationContinues = () => {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+        
+        const animateScroll = () => {
+          // Keep animation running for a bit after scrolling stops
+          if (isScrolling) {
+            animationFrameId = requestAnimationFrame(animateScroll);
+          } else if (isScrollAnimating) {
+            // Continue for a short while after scrolling stops
+            animationFrameId = requestAnimationFrame(animateScroll);
+            // Check if we should stop extra animation
+            if (Date.now() - lastScrollTime > 800) {
+              isScrollAnimating = false;
+            }
+          }
+        };
+        
+        isScrollAnimating = true;
+        animateScroll();
+      };
+      
+      // Main scroll event listener
       window.addEventListener('scroll', () => {
         // Calculate time since last scroll
         const currentTime = Date.now();
@@ -1203,35 +1300,41 @@
         // Calculate scroll velocity (pixels per millisecond)
         scrollVelocity = Math.abs(scrollDiff) / (timeDiff || 1);
         
-        // Detect start of scrolling
-        if (!isScrolling && Math.abs(scrollDiff) > 30) {
+        // Make sure animation continues during scrolling
+        ensureAnimationContinues();
+        
+        // Detect start of scrolling for main celestial effect
+        if (!isScrolling && Math.abs(scrollDiff) > 20) {
           isScrolling = true;
           
-          // Don't trigger explosion if one happened recently
-          if (currentTime - lastExplosionTime > 500) {
-            // Trigger massive explosion at scroll start
-            createScrollStartExplosion();
+          // Only trigger main effect if not too frequent
+          if (currentTime - lastExplosionTime > 400) {
+            // Trigger celestial flow at scroll start
+            createCelestialScrollEffect();
             lastExplosionTime = currentTime;
           }
         }
         
-        // Continue explosions during fast scrolling
-        if (isScrolling && scrollVelocity > 1.5 && Math.abs(scrollDiff) > 30) {
-          // Only trigger additional explosions if not too frequent
-          if (currentTime - lastExplosionTime > 200) {
+        // Continue gentle celestial effects during scrolling
+        if (isScrolling && Math.abs(scrollDiff) > 15) {
+          // Add subtle continuous effects during scrolling (less frequent than before)
+          if (currentTime - lastExplosionTime > 250) {
             const viewportHeight = window.innerHeight;
             const viewportWidth = window.innerWidth;
             const rect = this.canvas.getBoundingClientRect();
             
-            // Create explosion based on scroll direction (more toward where we're scrolling)
-            const x = viewportWidth * (0.3 + Math.random() * 0.4) - rect.left;
-            const yOffset = scrollDirection * viewportHeight * 0.3;
-            const y = (viewportHeight / 2) - rect.top + yOffset + (Math.random() * 100 - 50);
+            // Create subtle distortion in the direction of scrolling
+            const xVariance = (Math.random() * 0.5 - 0.25) * viewportWidth;
+            const x = (viewportWidth / 2) + xVariance - rect.left;
             
-            // Force based on velocity
-            const force = Math.min(scrollVelocity * 10, 7);
+            // Position slightly ahead in scroll direction
+            const yOffset = scrollDirection * viewportHeight * 0.15;
+            const y = (viewportHeight / 2) - rect.top + yOffset;
             
-            // Apply the explosion
+            // Gentler force for more celestial feel
+            const force = Math.min(scrollVelocity * 6, 4);
+            
+            // Apply the celestial distortion effect
             this.applyScrollExplosion(x, y, scrollDirection, force);
             lastExplosionTime = currentTime;
           }
@@ -1248,11 +1351,17 @@
           clearTimeout(scrollDetectionTimeout);
         }
         
-        // Detect when scrolling stops
+        // Detect when scrolling stops but keep animation going longer
         scrollDetectionTimeout = setTimeout(() => {
           isScrolling = false;
-          this.mouseActive = false;
-        }, 200);
+          // Don't immediately deactivate mouse interaction
+          // Let the animation continue naturally
+          setTimeout(() => {
+            if (!isScrolling) {
+              this.mouseActive = false;
+            }
+          }, 600);
+        }, 300);
       }, { passive: true });
       
       // Keep click explosion for direct interaction
