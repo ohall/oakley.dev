@@ -1,5 +1,4 @@
 ---
-// @ts-nocheck
 ---
 
 <div class="cosmic-background">
@@ -7,7 +6,7 @@
   <div class="nebula-glow"></div>
   <div class="galaxy-dust"></div>
   <div class="star-clusters"></div>
-  <div class="custom-cursor"></div>
+  <div class="custom-cursor">🚀</div>
 </div>
 
 <style>
@@ -42,19 +41,18 @@
   
   .custom-cursor {
     position: fixed;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.6);
-    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.4) 0%, rgba(100, 200, 255, 0.2) 50%, transparent 100%);
+    font-size: 32px;
     pointer-events: none;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) rotate(0deg);
     z-index: 19;
-    box-shadow: 0 0 10px rgba(100, 200, 255, 0.5);
-    transition: width 0.2s, height 0.2s, opacity 0.2s;
     opacity: 0;
-    mix-blend-mode: screen;
-    filter: blur(1px);
+    text-shadow: 0 0 10px rgba(100, 200, 255, 0.8), 
+                 0 0 20px rgba(120, 210, 255, 0.5);
+    transition: opacity 0.2s, text-shadow 0.2s;
+    will-change: transform, opacity, text-shadow, font-size;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .nebula-glow {
@@ -205,6 +203,25 @@
       transform: rotate(360deg) translateX(var(--orbit-distance)) rotate(-360deg);
     }
   }
+  
+  @keyframes rocket-thrust {
+    0% {
+      text-shadow: 0 0 10px rgba(100, 200, 255, 0.7),
+                   0 0 20px rgba(120, 220, 255, 0.5);
+      font-size: 32px;
+    }
+    50% {
+      text-shadow: 0 0 20px rgba(120, 220, 255, 0.9),
+                   0 0 30px rgba(140, 230, 255, 0.7),
+                   0 0 40px rgba(160, 240, 255, 0.4);
+      font-size: 35px;
+    }
+    100% {
+      text-shadow: 0 0 10px rgba(100, 200, 255, 0.7),
+                   0 0 20px rgba(120, 220, 255, 0.5);
+      font-size: 32px;
+    }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .nebula-glow, .galaxy-dust, .star-clusters, .galaxy-canvas {
@@ -249,545 +266,547 @@
 </style>
 
 <script>
-  /* 
-   * @ts-nocheck
-   */
-  // Define star particle type
-  interface Star {
-    x: number;
-    y: number;
-    r: number;
-    theta: number;
-    armOffset: number;
-    orbitalSpeed: number;
-    isCoreStar: boolean;
-    color: string;
-    size: number;
-    brightness: number;
-    twinkleSpeed: number;
-    twinklePhase: number;
-    currentBrightness?: number;
-    originalX: number;
-    originalY: number;
-    velocityX: number;
-    velocityY: number;
-    mass: number;
-    interactStrength: number;
-  }
-
-  // Define dust particle type
-  interface DustParticle {
-    x: number;
-    y: number;
-    r: number;
-    theta: number;
-    color: string;
-    size: number;
-    orbitalSpeed: number;
-    originalX: number;
-    originalY: number;
-    velocityX: number;
-    velocityY: number;
-    mass: number;
-    interactStrength: number;
-  }
-
-  // Define explosion particle type
-  interface ExplosionParticle {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    size: number;
-    color: string;
-    life: number;
-    maxLife: number;
-  }
-
-  // Define cursor update tracking
-  interface CursorUpdate {
-    time: number;
-    x: number;
-    y: number;
-  }
-
-  // Class for creating the dynamic galaxy animation
-  class GalaxyAnimation {
-    // Canvas properties
-    private canvas: HTMLCanvasElement;
-    private ctx: CanvasRenderingContext2D;
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize galaxy animation
+    const canvas = document.querySelector('.galaxy-canvas');
+    const cursor = document.querySelector('.custom-cursor');
     
-    // State arrays
-    private stars: Star[] = [];
-    private dustParticles: DustParticle[] = [];
-    private explosionParticles: ExplosionParticle[] = []; // For click explosion effect
+    if (!canvas) {
+      // Canvas element not found, cannot initialize animation
+      return;
+    }
     
-    // Positioning
-    private centerX: number = 0;
-    private centerY: number = 0;
-    private canvasWidth: number = 0;
-    private canvasHeight: number = 0;
-    private galaxyRadius: number = 0;
+    // Skip animation in Firefox or if reduced motion is preferred
+    if (navigator.userAgent.match(/firefox/i) || 
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // Animation disabled due to browser type or reduced motion preference
+      canvas.style.display = 'none';
+      return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    let width, height, centerX, centerY;
+    let stars = [];
+    let dust = [];
+    let isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
     
     // Animation properties
-    private rotation: number = 0;
-    private rotationSpeed: number = 0.0001;
-    private spiral: number = 0;
-    private spiralDirection: number = 1;
-    private spiralSpeed: number = 0.00005;
-    private isDarkTheme: boolean;
-    private arms: number = 5; // Number of spiral arms
-    private armWidth: number = 0.4; // Width of the spiral arms
+    let rotationSpeed = 0.0003; // Base rotation speed
+    let currentSpeed = rotationSpeed;
     
-    // Mouse interaction properties
-    private mouseX: number = -1000; // Off-screen by default
-    private mouseY: number = -1000;
-    private mouseActive: boolean = false;
-    private mouseRadius: number = 150; // Mouse influence radius
-    private mouseForce: number = 1.0; // Strength of repulsion
-    private gravityStrength: number = 0.04; // How strongly particles are pulled back
-    private clickForce: number = 3.0; // Strength of click explosion
-    private lastCursorUpdate: CursorUpdate | null = null;
+    // Initialize animation
+    function init() {
+      // Set canvas dimensions
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      width = canvas.width;
+      height = canvas.height;
+      centerX = width / 2;
+      centerY = height / 2;
+      
+      // Generate stars and dust
+      createStars();
+      createDust();
+    }
     
-    // Touch properties
-    private touchStartX: number | undefined;
-    private touchStartY: number | undefined;
-
-    constructor(canvas: HTMLCanvasElement) {
-      this.canvas = canvas;
-      this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-      this.isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
-
-      this.updateCanvasSize();
-      this.generateStars();
-      this.generateDust();
-      this.animate();
-    }
-
-    updateCanvasSize() {
-      this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight;
-      this.canvasWidth = this.canvas.width;
-      this.canvasHeight = this.canvas.height;
-      this.centerX = this.canvasWidth / 2;
-      this.centerY = this.canvasHeight / 2;
-      this.galaxyRadius = Math.min(this.canvasWidth, this.canvasHeight) * 0.4;
-    }
-
-    generateStars() {
-      // Adaptive star count - slightly fewer stars for cleaner appearance
-      const starCount = Math.min(1800, Math.max(500, Math.floor(this.canvasWidth * this.canvasHeight / 2500)));
-      this.stars = [];
-
-      // Generate stars with different properties
+    // Create stars with positions and properties
+    function createStars() {
+      const starCount = Math.min(2000, Math.floor(width * height / 2200));
+      stars = [];
+      
+      const galaxyRadius = Math.min(width, height) * 0.4;
+      const galaxyArms = 4;
+      
       for (let i = 0; i < starCount; i++) {
-        // Decide whether this star is a regular star or a core star
-        const isCoreStar = Math.random() < 0.12; // 12% of stars are in the core
+        // Determine star type and position
+        const isCore = Math.random() < 0.1;
+        const isPlane = Math.random() < 0.85;
         
-        // Calculate distance from center (r) with a different distribution for core stars
-        let r;
-        let theta;
-        let armOffset;
+        let r, theta, armOffset;
+        let x, y;
         
-        if (isCoreStar) {
-          // Core stars have a small radius and are more concentrated in the center
-          r = Math.random() * this.galaxyRadius * 0.2;
-          theta = Math.random() * Math.PI * 2; // Random angle
-          armOffset = 0; // No arm offset for core stars
+        if (isCore) {
+          // Core stars
+          r = Math.random() * galaxyRadius * 0.15;
+          theta = Math.random() * Math.PI * 2;
+          armOffset = 0;
+        } else if (isPlane) {
+          // Stars in galactic plane/arms
+          r = Math.pow(Math.random(), 1.3) * galaxyRadius;
+          
+          // Assign to a spiral arm
+          const armIndex = Math.floor(Math.random() * galaxyArms);
+          const baseArmAngle = (Math.PI * 2 / galaxyArms) * armIndex;
+          
+          // Calculate spiral angle
+          const spiralTightness = 0.8;
+          const spiralAngle = spiralTightness * Math.log(r / (galaxyRadius * 0.1));
+          theta = baseArmAngle + spiralAngle;
+          
+          // Add some variance to arm position
+          const armWidth = 0.3;
+          const maxOffset = armWidth * (0.3 + 0.7 * r / galaxyRadius);
+          armOffset = (Math.random() - 0.5) * maxOffset;
         } else {
-          // Regular stars follow a modified distribution to form arms
-          r = Math.random() * Math.random() * this.galaxyRadius; // Quadratic falloff gives more stars in center
-          theta = Math.random() * Math.PI * 2; // Random initial angle
-          
-          // Calculate which arm this star belongs to
-          const armIndex = Math.floor(Math.random() * this.arms);
-          const armAngle = (Math.PI * 2 / this.arms) * armIndex;
-          
-          // Modify angle to create spiral arms with some randomness
-          const spiralFactor = 0.5; // How tightly the spiral winds
-          const angleOffset = spiralFactor * Math.log(r / this.galaxyRadius + 0.1);
-          theta = armAngle + angleOffset;
-          
-          // Add some random offset from the perfect spiral - tighter clustering for better definition
-          armOffset = (Math.random() - 0.5) * this.armWidth * 0.8;
+          // Halo stars
+          r = Math.random() * galaxyRadius * 1.2;
+          theta = Math.random() * Math.PI * 2;
+          armOffset = 0;
         }
         
         // Calculate initial position
-        const x = r * Math.cos(theta + armOffset);
-        const y = r * Math.sin(theta + armOffset);
+        x = r * Math.cos(theta + armOffset);
+        y = r * Math.sin(theta + armOffset);
         
-        // Star properties - adjusted color ranges for better clarity
-        const starType = Math.random();
+        // Star colors
         let color;
-        let size;
-        
-        if (starType < 0.6) { // Most stars are white/blue-ish
-          const hue = Math.random() * 40 + 190; // 190-230: blue to cyan
-          const saturation = Math.random() * 25 + 75; // 75-100%
-          const lightness = Math.random() * 20 + 75; // 75-95% - brighter stars overall
-          color = `hsla(${hue}, ${saturation}%, ${lightness}%, 1)`;
-          size = Math.random() * 1.3 + 0.5; // Slightly smaller for less blur
-        } else if (starType < 0.8) { // Some are yellow
-          const hue = Math.random() * 25 + 45; // 45-70: yellow
-          const saturation = Math.random() * 30 + 70;
-          const lightness = Math.random() * 20 + 75;
-          color = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.95)`;
-          size = Math.random() * 1.5 + 0.7;
-        } else if (starType < 0.95) { // Few are red
-          const hue = Math.random() * 20 + 350; // 350-370: red
-          const saturation = Math.random() * 25 + 75;
-          const lightness = Math.random() * 20 + 75;
-          color = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.9)`;
-          size = Math.random() * 1.7 + 0.9;
-        } else { // Very few are special bright stars
-          color = `hsla(0, 0%, 100%, 1)`;
-          // Slightly smaller special stars for dark mode clarity
-          size = Math.random() * 2.2 + 1.3;
+        if (isCore) {
+          // Core - yellower
+          const hue = Math.random() * 40 + 40;
+          const sat = Math.random() * 30 + 60;
+          const light = Math.random() * 15 + 80;
+          color = `hsla(${hue}, ${sat}%, ${light}%, 0.9)`;
+        } else if (isPlane) {
+          // Determine position in galaxy for color
+          const distRatio = r / galaxyRadius;
+          
+          if (Math.abs(armOffset) < 0.1 && distRatio > 0.2) {
+            // Arms - bluer stars
+            const hue = Math.random() * 40 + 190;
+            const sat = Math.random() * 30 + 70;
+            const light = Math.random() * 15 + 75;
+            color = `hsla(${hue}, ${sat}%, ${light}%, 0.9)`;
+          } else {
+            // Disk - mix of colors
+            const hue = Math.random() < 0.7 ? 
+                      (Math.random() * 40 + 190) : // blue-ish
+                      (Math.random() * 60 + 30);   // yellow-ish
+            const sat = Math.random() * 30 + 60;
+            const light = Math.random() * 15 + 75;
+            color = `hsla(${hue}, ${sat}%, ${light}%, 0.85)`;
+          }
+        } else {
+          // Halo - redder older stars
+          const hue = Math.random() * 30 + (Math.random() < 0.7 ? 350 : 30);
+          const sat = Math.random() * 20 + 50;
+          const light = Math.random() * 15 + 70;
+          color = `hsla(${hue}, ${sat}%, ${light}%, 0.75)`;
         }
         
-        // Orbital properties - slightly faster rotation overall
-        const orbitalSpeed = isCoreStar 
-          ? (0.006 + Math.random() * 0.005) * (Math.random() < 0.5 ? 1 : -1) // Core stars have varied speeds and directions
-          : (0.0012 + Math.random() * 0.0018) / (r / this.galaxyRadius + 0.1); // Outer stars move slower
+        // Assign orbital speed - follow realistic galactic rotation curve
+        let orbitalSpeed;
+        if (isCore) {
+          orbitalSpeed = 0.006 + Math.random() * 0.003;
+        } else if (isPlane) {
+          const rRatio = r / (galaxyRadius * 0.2);
+          orbitalSpeed = 0.006 * (1 - Math.exp(-rRatio)) / (1 + r / (galaxyRadius * 1.5));
+          orbitalSpeed *= 0.8 + Math.random() * 0.4;
+        } else {
+          orbitalSpeed = (0.002 + Math.random() * 0.002) * (Math.random() < 0.5 ? 1 : -1);
+        }
         
-        // Add star to array with properties for interactive movement
-        this.stars.push({
-          x, y, r, theta, armOffset, 
-          orbitalSpeed,
-          isCoreStar,
-          color,
-          size,
-          brightness: Math.random() * 0.4 + 0.6, // Higher brightness base for better visibility
-          twinkleSpeed: Math.random() * 0.02 + 0.01, // Slightly less twinkling for less blurry look
-          twinklePhase: Math.random() * Math.PI * 2,
-          // Properties for mouse interaction
+        // Add star
+        stars.push({
+          x: x,
+          y: y,
+          r: r,
+          theta: theta,
+          armOffset: armOffset,
+          size: Math.random() * (isCore ? 1.6 : 1.2) + 0.5,
+          color: color,
+          orbitalSpeed: orbitalSpeed,
           originalX: x,
           originalY: y,
-          velocityX: 0,
-          velocityY: 0,
-          mass: size * (isCoreStar ? 2 : 1), // Bigger stars have more mass
-          interactStrength: Math.random() * 0.4 + 0.8 // Some stars react more than others
+          vx: 0,
+          vy: 0,
+          isCore: isCore,
+          isPlane: isPlane,
+          brightness: Math.random() * 0.3 + 0.7,
+          twinkleSpeed: Math.random() * 0.02 + 0.01,
+          twinklePhase: Math.random() * Math.PI * 2
         });
       }
     }
-
-    generateDust() {
-      // Reduced dust count for better performance and clarity
-      const dustCount = Math.floor(this.canvasWidth * this.canvasHeight / 15000);
-      this.dustParticles = [];
+    
+    // Create dust particles
+    function createDust() {
+      const dustCount = Math.floor(width * height / 12000);
+      dust = [];
+      
+      const galaxyRadius = Math.min(width, height) * 0.4;
+      const galaxyArms = 4;
       
       for (let i = 0; i < dustCount; i++) {
-        const r = Math.random() * Math.random() * this.galaxyRadius * 1.2;
-        const theta = Math.random() * Math.PI * 2;
+        const isCore = Math.random() < 0.15;
+        const isArm = Math.random() < 0.8;
         
-        // Dust follows the spiral structure too but with more variation
-        const armIndex = Math.floor(Math.random() * this.arms);
-        const armAngle = (Math.PI * 2 / this.arms) * armIndex;
-        const spiralFactor = 0.3;
-        const angleOffset = spiralFactor * Math.log(r / this.galaxyRadius + 0.1);
-        const actualTheta = armAngle + angleOffset + (Math.random() - 0.5) * this.armWidth * 2;
+        let r, theta;
+        let x, y;
         
-        const x = r * Math.cos(actualTheta);
-        const y = r * Math.sin(actualTheta);
-        
-        // Crisper, more refined colors for dust
-        let hue, saturation, lightness, opacity;
-        
-        if (Math.random() < 0.7) {
-          // Blue to purple-ish (most dust)
-          hue = Math.random() * 60 + 180; 
-          saturation = Math.random() * 30 + 40;
-          lightness = Math.random() * 15 + 65;
-          opacity = Math.random() * 0.1 + 0.03;
-        } else if (Math.random() < 0.9) {
-          // Some slightly reddish dust
-          hue = Math.random() * 30 + 350;
-          saturation = Math.random() * 30 + 30;
-          lightness = Math.random() * 15 + 65;
-          opacity = Math.random() * 0.08 + 0.02;
+        if (isCore) {
+          // Core dust
+          r = Math.random() * galaxyRadius * 0.3;
+          theta = Math.random() * Math.PI * 2;
+        } else if (isArm) {
+          // Arm dust - follows spiral pattern
+          r = Math.pow(Math.random(), 0.8) * galaxyRadius * 1.1;
+          
+          // Assign to spiral arm
+          const armIndex = Math.floor(Math.random() * galaxyArms);
+          const baseArmAngle = (Math.PI * 2 / galaxyArms) * armIndex;
+          
+          const spiralTightness = 0.9;
+          const spiralAngle = spiralTightness * Math.log(r / (galaxyRadius * 0.1));
+          theta = baseArmAngle + spiralAngle;
+          
+          // Add small offset
+          const armWidth = 0.4;
+          const maxOffset = armWidth * (0.2 + 0.8 * r / galaxyRadius);
+          theta += (Math.random() - 0.5) * maxOffset;
         } else {
-          // Very few bright dust particles
-          hue = Math.random() * 360;
-          saturation = Math.random() * 20 + 10;
-          lightness = Math.random() * 20 + 75;
-          opacity = Math.random() * 0.05 + 0.05;
+          // Halo dust
+          r = Math.random() * galaxyRadius * 1.3;
+          theta = Math.random() * Math.PI * 2;
         }
         
-        this.dustParticles.push({
-          x, y, r, theta: actualTheta,
-          color: `hsla(${hue}, ${saturation}%, ${lightness}%, ${opacity})`,
-          size: Math.random() * 2 + 0.5, // Smaller dust particles for better definition
-          orbitalSpeed: (0.0005 + Math.random() * 0.001) / (r / this.galaxyRadius + 0.1),
-          // Properties for mouse interaction
+        // Calculate position
+        x = r * Math.cos(theta);
+        y = r * Math.sin(theta);
+        
+        // Dust colors - more muted
+        let color;
+        let opacity = Math.random() * 0.05 + 0.02;
+        
+        if (isCore) {
+          const hue = Math.random() * 30 + 40;
+          const sat = Math.random() * 20 + 50;
+          const light = Math.random() * 10 + 50;
+          color = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+        } else if (isArm) {
+          // Choose dust color type
+          const dustType = Math.random();
+          if (dustType < 0.5) {
+            // Blue nebula
+            const hue = Math.random() * 40 + 200;
+            const sat = Math.random() * 30 + 30;
+            const light = Math.random() * 10 + 60;
+            color = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+          } else if (dustType < 0.8) {
+            // Purplish
+            const hue = Math.random() * 40 + 260;
+            const sat = Math.random() * 30 + 20;
+            const light = Math.random() * 10 + 55;
+            color = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+          } else {
+            // Reddish
+            const hue = Math.random() * 30 + 350;
+            const sat = Math.random() * 30 + 40;
+            const light = Math.random() * 10 + 50;
+            color = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+          }
+        } else {
+          // Halo dust - very faint
+          const hue = Math.random() * 60 + 200;
+          const sat = Math.random() * 20 + 10;
+          const light = Math.random() * 15 + 60;
+          color = `hsla(${hue}, ${sat}%, ${light}%, ${opacity*0.5})`;
+        }
+        
+        // Calculate orbital speed
+        let orbitalSpeed;
+        if (isCore) {
+          orbitalSpeed = 0.004 + Math.random() * 0.002;
+        } else if (isArm) {
+          const rRatio = r / (galaxyRadius * 0.2);
+          orbitalSpeed = 0.005 * (1 - Math.exp(-rRatio)) / (1 + r / (galaxyRadius * 1.5));
+          orbitalSpeed *= 0.85 + Math.random() * 0.3;
+        } else {
+          orbitalSpeed = (0.001 + Math.random() * 0.001) * (Math.random() < 0.5 ? 1 : -1);
+        }
+        
+        dust.push({
+          x: x,
+          y: y,
+          r: r,
+          theta: theta,
+          size: Math.random() * 1.8 + 0.4,
+          color: color,
+          orbitalSpeed: orbitalSpeed,
           originalX: x,
           originalY: y,
-          velocityX: 0,
-          velocityY: 0,
-          mass: Math.random() * 0.5 + 0.2, // Dust has less mass than stars
-          interactStrength: Math.random() * 0.7 + 0.9 // Dust is more affected by mouse
-        });
-      }
-    }
-
-    // Create more subtle celestial effect particles
-    createCelestialEffect(x, y, particleCount = 20, direction = 0) {
-      // Add subtle space-like particles
-      for (let i = 0; i < particleCount; i++) {
-        // Spiral pattern for celestial feel
-        const spiralTightness = 0.2 + Math.random() * 0.3;
-        const spiralAngle = i / particleCount * Math.PI * (4 + Math.random() * 2);
-        const distanceFromCenter = 3 + Math.random() * 10 * (1 - i / particleCount);
-        
-        const angle = spiralAngle + Math.random() * 0.2 - 0.1;
-        
-        // Gentler speed for cosmic feel
-        const baseSpeed = Math.random() * 2 + 0.8;
-        const speed = baseSpeed * (1 - i / particleCount * 0.5); // Slower particles farther out
-        
-        // Calculate velocity components with some directional bias
-        const directionBias = direction * 0.3; // Subtle direction based on scroll
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed + directionBias;
-        
-        // Small particles for star-like effect
-        const size = Math.random() * 1.2 + 0.3;
-        
-        // Celestial color palette - predominantly blues and whites
-        let hue, saturation, lightness, opacity;
-        
-        const colorType = Math.random();
-        if (colorType < 0.6) { // Predominantly blue/white stars
-          hue = Math.floor(Math.random() * 40) + 200; // 200-240: blue range
-          saturation = Math.floor(Math.random() * 40) + 10; // 10-50%: less saturated
-          lightness = Math.floor(Math.random() * 20) + 75; // 75-95%: bright stars
-          opacity = Math.random() * 0.4 + 0.6; // 0.6-1.0: semi-transparent
-        } else if (colorType < 0.9) { // Some subtle purples
-          hue = Math.floor(Math.random() * 40) + 250; // 250-290: purple range
-          saturation = Math.floor(Math.random() * 20) + 10; // 10-30%: very desaturated
-          lightness = Math.floor(Math.random() * 15) + 75; // 75-90%: bright
-          opacity = Math.random() * 0.3 + 0.6; // 0.6-0.9: more transparent
-        } else { // Few faint red/yellow (distant stars or dust)
-          hue = Math.floor(Math.random() * 60) + 10; // 10-70: red to yellow
-          saturation = Math.floor(Math.random() * 20) + 20; // 20-40%: desaturated
-          lightness = Math.floor(Math.random() * 15) + 75; // 75-90%: bright
-          opacity = Math.random() * 0.3 + 0.3; // 0.3-0.6: quite transparent
-        }
-        
-        // Longer lifespans for slower, gentler effect
-        const baseLife = Math.random() * 80 + 60; // 60-140: longer lived
-        const life = baseLife * (1 + Math.sin(i / particleCount * Math.PI) * 0.2);
-        
-        // Calculate position with spiral pattern
-        const particleX = x + Math.cos(spiralAngle) * distanceFromCenter;
-        const particleY = y + Math.sin(spiralAngle) * distanceFromCenter;
-        
-        this.explosionParticles.push({
-          x: particleX,
-          y: particleY,
-          vx,
-          vy,
-          size,
-          color: `hsla(${hue}, ${saturation}%, ${lightness}%, ${opacity})`,
-          life,
-          maxLife: life,
+          vx: 0,
+          vy: 0,
+          isCore: isCore,
+          isArm: isArm
         });
       }
     }
     
-    // Create explosion particles at position (used for click effects)
-    createExplosion(x, y, particleCount = 30) {
-      // Add variation based on direction and intensity
-      for (let i = 0; i < particleCount; i++) {
-        // Random direction with some variation
-        const angle = Math.random() * Math.PI * 2;
+    // Update star positions and overall galaxy with enhanced effects for mouse interaction
+    function updateStars() {
+      // Handle special behavior when mouse just stopped
+      if (mouseJustStopped) {
+        applyGravitationalPull();
+        mouseJustStopped = false;
+      }
+      
+      // Initialize gravitational pull variable at the beginning of the function
+      let gravitationalPull = 0.025; // Default value
+      
+      // Apply rotation and update positions
+      for (let i = 0; i < stars.length; i++) {
+        const star = stars[i];
         
-        // Moderate speed for subtle effect
-        const baseSpeed = Math.random() * 4 + 2;
-        const speed = baseSpeed * (1 - i / particleCount * 0.3);
+        // Apply rotation based on current speed
+        const scaledSpeed = star.isCore ? 
+                          star.orbitalSpeed * (1 + (currentSpeed - rotationSpeed) * 1.5) : 
+                          star.orbitalSpeed * (1 + (currentSpeed - rotationSpeed) * 3);
         
-        // Calculate velocity components
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
+        star.theta += scaledSpeed;
         
-        // Smaller particles for star-like effect
-        const size = Math.random() * 1.8 + 0.4;
+        // Calculate orbital position
+        const orbitalX = star.r * Math.cos(star.theta + star.armOffset);
+        const orbitalY = star.r * Math.sin(star.theta + star.armOffset);
         
-        // Celestial color palette - predominantly blues and purples
-        let hue, saturation, lightness;
+        // Calculate gravity back to orbit
+        const dxToOrbit = orbitalX - star.x;
+        const dyToOrbit = orbitalY - star.y;
+        const distFromOrbit = Math.sqrt(dxToOrbit * dxToOrbit + dyToOrbit * dyToOrbit);
         
-        if (i < particleCount * 0.7) {
-          // Mostly blue/cyan particles for celestial feel
-          hue = Math.floor(Math.random() * 40) + 190; // 190-230: blue to cyan
-          saturation = Math.floor(Math.random() * 40) + 30; // 30-70%
-          lightness = Math.floor(Math.random() * 15) + 80; // 80-95%: bright
+        // Apply mouse repulsion effect - stars fly away from cursor
+        if (mouseActive && mouseX >= 0 && mouseY >= 0) {
+          // Calculate distance between star and mouse cursor (in canvas coordinates)
+          const dxToMouse = (star.x + centerX) - mouseX;
+          const dyToMouse = (star.y + centerY) - mouseY;
+          const distToMouse = Math.sqrt(dxToMouse * dxToMouse + dyToMouse * dyToMouse);
+          
+          // Define mouse influence radius
+          const mouseInfluenceRadius = Math.min(width, height) * 0.2;
+          
+          // If star is within mouse influence radius, apply repulsion force
+          if (distToMouse < mouseInfluenceRadius) {
+            // Calculate repulsion strength based on distance (stronger when closer)
+            const repulsionStrength = 0.5 * (1 - distToMouse / mouseInfluenceRadius);
+            
+            // Apply repulsion force
+            const repulsionFactor = mouseMoving ? 1.5 : 0.8; // Stronger when mouse is moving
+            
+            // Calculate normalized direction vector from mouse to star
+            const dirX = dxToMouse / (distToMouse || 1);
+            const dirY = dyToMouse / (distToMouse || 1);
+            
+            // Apply repulsion force (push away from mouse)
+            star.vx += dirX * repulsionStrength * repulsionFactor;
+            star.vy += dirY * repulsionStrength * repulsionFactor;
+            
+            // Add some tangential component for swirling effect around cursor
+            star.vx += dirY * repulsionStrength * 0.4;
+            star.vy -= dirX * repulsionStrength * 0.4;
+            
+            // When mouse is active, increase the rotational speed for more dynamic effect
+            currentSpeed = rotationSpeed * 3;
+            
+            // Reduce gravity when under mouse influence
+            gravitationalPull = 0.005;
+          }
+        }
+        
+        // Calculate base gravitational force based on mouse movement
+        if (mouseActive && mouseMoving) {
+          // During active mouse movement: weak gravity to maximize flying outward
+          gravitationalPull = 0.005 * (1 - Math.min(0.9, (currentSpeed - rotationSpeed) / rotationSpeed * 3));
         } else {
-          // Some subtle purple/violet particles
-          hue = Math.floor(Math.random() * 40) + 250; // 250-290: purple range
-          saturation = Math.floor(Math.random() * 30) + 20; // 20-50%
-          lightness = Math.floor(Math.random() * 15) + 75; // 75-90%
+          // When mouse stops: stronger gravity for visible return effect
+          gravitationalPull = 0.03 * (1 + Math.min(1, distFromOrbit / 100));
         }
         
-        // Varied lifespans for natural fading
-        const baseLife = Math.random() * 50 + 30; // 30-80
-        const life = baseLife * (1 - i / particleCount * 0.2);
+        if (distFromOrbit > 0.1) {
+          // Apply gravity based on orbital characteristics
+          // Core stars are more strongly bound to their orbits
+          const bindingFactor = star.isCore ? 1.2 : 0.7;
+          star.vx += dxToOrbit * gravitationalPull * bindingFactor;
+          star.vy += dyToOrbit * gravitationalPull * bindingFactor;
+        }
         
-        this.explosionParticles.push({
-          x,
-          y,
-          vx,
-          vy,
-          size,
-          color: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.9)`,
-          life,
-          maxLife: life,
-        });
+        // Damping is different based on mouse movement
+        // - Almost no damping during movement = particles fly far
+        // - Stronger damping when stationary = smoother return
+        const dampingFactor = mouseMoving ? 0.992 : 0.96;
+        star.vx *= dampingFactor;
+        star.vy *= dampingFactor;
+        
+        // Update position with higher velocity during mouse movement
+        const velocityFactor = mouseMoving ? 1.25 : 1.0;
+        star.x += star.vx * velocityFactor;
+        star.y += star.vy * velocityFactor;
+        
+        // Update twinkle
+        star.twinklePhase += star.twinkleSpeed;
+        star.currentBrightness = star.brightness * (0.8 + 0.2 * Math.sin(star.twinklePhase));
+      }
+      
+      // Update dust particles 
+      updateDustParticles();
+    }
+    
+    // Apply a strong gravitational pull when mouse stops
+    function applyGravitationalPull() {
+      // Apply gravitational pull when mouse stops
+      
+      // Apply to stars
+      for (let i = 0; i < stars.length; i++) {
+        const star = stars[i];
+        
+        // Calculate orbital position
+        const orbitalX = star.r * Math.cos(star.theta + star.armOffset);
+        const orbitalY = star.r * Math.sin(star.theta + star.armOffset);
+        
+        // Vector from current position to orbital position
+        const dxToOrbit = orbitalX - star.x;
+        const dyToOrbit = orbitalY - star.y;
+        const distFromOrbit = Math.sqrt(dxToOrbit * dxToOrbit + dyToOrbit * dyToOrbit);
+        
+        // Apply a strong instantaneous pull toward orbit
+        // Stronger for stars that are farther from their orbital position
+        const pullFactor = Math.min(0.2, 0.05 + distFromOrbit / 100);
+        
+        // Add velocity toward orbit - core stars pulled more strongly
+        star.vx += dxToOrbit * pullFactor * (star.isCore ? 1.2 : 0.8);
+        star.vy += dyToOrbit * pullFactor * (star.isCore ? 1.2 : 0.8);
+      }
+      
+      // Apply to dust with even stronger effect
+      for (let i = 0; i < dust.length; i++) {
+        const d = dust[i];
+        
+        // Calculate orbital position
+        const orbitalX = d.r * Math.cos(d.theta);
+        const orbitalY = d.r * Math.sin(d.theta);
+        
+        // Vector from current position to orbital position
+        const dxToOrbit = orbitalX - d.x;
+        const dyToOrbit = orbitalY - d.y;
+        const distFromOrbit = Math.sqrt(dxToOrbit * dxToOrbit + dyToOrbit * dyToOrbit);
+        
+        // Apply a strong instantaneous pull toward orbit - stronger than stars
+        // This creates a more dramatic "snap back" effect for dust
+        const pullFactor = Math.min(0.3, 0.08 + distFromOrbit / 80);
+        
+        // Add velocity toward orbit
+        d.vx += dxToOrbit * pullFactor;
+        d.vy += dyToOrbit * pullFactor;
       }
     }
     
-    updateStars() {
-      // Update the spiral factor
-      this.spiral += this.spiralSpeed * this.spiralDirection;
-      if (this.spiral > 0.2 || this.spiral < -0.2) {
-        this.spiralDirection *= -1;
-      }
-      
-      // Update explosion particles
-      for (let i = 0; i < this.explosionParticles.length; i++) {
-        const particle = this.explosionParticles[i];
+    function updateDustParticles() {
+      // Update dust particles with mouse movement effects
+      for (let i = 0; i < dust.length; i++) {
+        const d = dust[i];
         
-        // Update position
-        particle.x += particle.vx;
-        particle.y += particle.vy;
+        // Apply rotation with greater effect for more dynamic visuals
+        const scaledSpeed = d.isCore ? 
+                          d.orbitalSpeed * (1 + (currentSpeed - rotationSpeed) * 2) : 
+                          d.orbitalSpeed * (1 + (currentSpeed - rotationSpeed) * 4);
         
-        // Apply gravity and friction
-        particle.vx *= 0.96;
-        particle.vy *= 0.96;
-        particle.vy += 0.1; // Slight gravity downward
+        d.theta += scaledSpeed;
         
-        // Decrease life
-        particle.life -= 1;
+        // Calculate orbital position
+        const orbitalX = d.r * Math.cos(d.theta);
+        const orbitalY = d.r * Math.sin(d.theta);
         
-        // Remove dead particles
-        if (particle.life <= 0) {
-          this.explosionParticles.splice(i, 1);
-          i--; // Adjust index after removal
-        }
-      }
-      
-      // Update the rotation
-      this.rotation += this.rotationSpeed;
-      
-      // Update each star with mouse interaction
-      for (let i = 0; i < this.stars.length; i++) {
-        const star = this.stars[i];
-        
-        // Store the orbital position as the natural position
-        // Update position based on orbital motion
-        star.theta += star.orbitalSpeed;
-        
-        // Apply spiral effect (more pronounced for outer stars)
-        const spiralEffect = star.isCoreStar ? 0 : this.spiral * (star.r / this.galaxyRadius);
-        const adjustedTheta = star.theta + spiralEffect;
-        
-        // Calculate natural orbital position
-        star.originalX = star.r * Math.cos(adjustedTheta + star.armOffset);
-        star.originalY = star.r * Math.sin(adjustedTheta + star.armOffset);
-        
-        // Apply mouse interaction physics
-        if (this.mouseActive) {
-          // Calculate distance from mouse
-          const dx = (this.centerX + star.x) - this.mouseX;
-          const dy = (this.centerY + star.y) - this.mouseY;
-          const distanceSquared = dx * dx + dy * dy;
-          const distance = Math.sqrt(distanceSquared);
+        // Apply mouse repulsion effect for dust particles - more dramatic than stars
+        if (mouseActive && mouseX >= 0 && mouseY >= 0) {
+          // Calculate distance between dust and mouse cursor (in canvas coordinates)
+          const dxToMouse = (d.x + centerX) - mouseX;
+          const dyToMouse = (d.y + centerY) - mouseY;
+          const distToMouse = Math.sqrt(dxToMouse * dxToMouse + dyToMouse * dyToMouse);
           
-          // If within influence radius, apply repulsion force
-          if (distance < this.mouseRadius) {
-            // Calculate repulsion force (stronger when closer)
-            const force = (1 - distance / this.mouseRadius) * this.mouseForce * star.interactStrength;
+          // Define mouse influence radius - larger for dust
+          const mouseInfluenceRadius = Math.min(width, height) * 0.25;
+          
+          // If dust is within mouse influence radius, apply repulsion force
+          if (distToMouse < mouseInfluenceRadius) {
+            // Calculate repulsion strength based on distance (stronger when closer)
+            const repulsionStrength = 0.8 * (1 - distToMouse / mouseInfluenceRadius);
             
-            // Apply force to velocity (normalized direction * force / mass)
-            star.velocityX += (dx / distance) * force / star.mass;
-            star.velocityY += (dy / distance) * force / star.mass;
+            // Apply repulsion force - stronger for dust than stars
+            const repulsionFactor = mouseMoving ? 1.8 : 1.0; // Even stronger when mouse is moving
+            
+            // Calculate normalized direction vector from mouse to dust
+            const dirX = dxToMouse / (distToMouse || 1);
+            const dirY = dyToMouse / (distToMouse || 1);
+            
+            // Apply repulsion force (push away from mouse)
+            d.vx += dirX * repulsionStrength * repulsionFactor;
+            d.vy += dirY * repulsionStrength * repulsionFactor;
+            
+            // Add stronger tangential component for swirling effect around cursor
+            d.vx += dirY * repulsionStrength * 0.6;
+            d.vy -= dirX * repulsionStrength * 0.6;
+            
+            // When mouse is active, increase rotation speed
+            currentSpeed = rotationSpeed * 4;
           }
         }
         
-        // Apply gravity back to original position
-        const dx = star.originalX - star.x;
-        const dy = star.originalY - star.y;
-        star.velocityX += dx * this.gravityStrength;
-        star.velocityY += dy * this.gravityStrength;
+        // Calculate gravity based on mouse state
+        const dxToOrbit = orbitalX - d.x;
+        const dyToOrbit = orbitalY - d.y;
+        const distFromOrbit = Math.sqrt(dxToOrbit * dxToOrbit + dyToOrbit * dyToOrbit);
         
-        // Apply friction to dampen velocity
-        star.velocityX *= 0.95;
-        star.velocityY *= 0.95;
+        // Calculate gravity with contrast between mouse moving/not moving
+        let dustGravity;
         
-        // Update position based on velocity
-        star.x += star.velocityX;
-        star.y += star.velocityY;
-        
-        // Update twinkle effect
-        star.twinklePhase += star.twinkleSpeed;
-        star.currentBrightness = star.brightness * (0.7 + 0.3 * Math.sin(star.twinklePhase));
-      }
-      
-      // Update dust particles with mouse interaction
-      for (let i = 0; i < this.dustParticles.length; i++) {
-        const dust = this.dustParticles[i];
-        
-        // Update orbital position
-        dust.theta += dust.orbitalSpeed;
-        dust.originalX = dust.r * Math.cos(dust.theta);
-        dust.originalY = dust.r * Math.sin(dust.theta);
-        
-        // Apply mouse interaction physics - dust is more affected
-        if (this.mouseActive) {
-          // Calculate distance from mouse
-          const dx = (this.centerX + dust.x) - this.mouseX;
-          const dy = (this.centerY + dust.y) - this.mouseY;
-          const distanceSquared = dx * dx + dy * dy;
-          const distance = Math.sqrt(distanceSquared);
-          
-          // If within influence radius, apply repulsion force (larger radius for dust)
-          if (distance < this.mouseRadius * 1.5) {
-            // Calculate repulsion force (stronger when closer)
-            const force = (1 - distance / (this.mouseRadius * 1.5)) * this.mouseForce * 1.5 * dust.interactStrength;
-            
-            // Apply force to velocity (normalized direction * force / mass)
-            dust.velocityX += (dx / distance) * force / dust.mass;
-            dust.velocityY += (dy / distance) * force / dust.mass;
-          }
+        if (mouseActive && mouseMoving) {
+          // During mouse movement: almost zero gravity to maximize streaming
+          dustGravity = 0.003 * (1 - Math.min(0.95, (currentSpeed - rotationSpeed) / rotationSpeed * 4));
+        } else {
+          // When mouse stops: stronger gravity for visible return
+          dustGravity = 0.02 * (1 + Math.min(1.2, distFromOrbit / 80));
         }
         
-        // Apply gravity back to original position (weaker for dust to make it float longer)
-        const dx = dust.originalX - dust.x;
-        const dy = dust.originalY - dust.y;
-        dust.velocityX += dx * this.gravityStrength * 0.7;
-        dust.velocityY += dy * this.gravityStrength * 0.7;
+        if (distFromOrbit > 0.5) {
+          // Apply gravity based on dust position
+          const coreFactor = d.isCore ? 1 : 0.6; 
+          d.vx += dxToOrbit * dustGravity * coreFactor;
+          d.vy += dyToOrbit * dustGravity * coreFactor;
+        }
         
-        // Apply friction to dampen velocity (less for dust so it floats longer)
-        dust.velocityX *= 0.98;
-        dust.velocityY *= 0.98;
+        // Damping based on mouse movement
+        const dustDampingFactor = mouseMoving ? 0.995 : 0.97;
+        d.vx *= dustDampingFactor;
+        d.vy *= dustDampingFactor;
         
-        // Update position based on velocity
-        dust.x += dust.velocityX;
-        dust.y += dust.velocityY;
+        // Higher velocity during mouse movement for dramatic effect
+        const velocityFactor = mouseMoving ? 1.5 : 1.0;
+        d.x += d.vx * velocityFactor;
+        d.y += d.vy * velocityFactor;
+      }
+      
+      // Adjust rotation speed return rate based on mouse state
+      const decayRate = mouseMoving ? 0.99 : 0.95;
+      
+      // Gradually return to normal rotation speed with smoother transition
+      if (Math.abs(currentSpeed - rotationSpeed) > 0.0001) {
+        currentSpeed = rotationSpeed + (currentSpeed - rotationSpeed) * decayRate;
+      } else {
+        currentSpeed = rotationSpeed;
       }
     }
-
-    drawGalaxy() {
-      const ctx = this.ctx;
+    
+    // Draw the galaxy
+    function drawGalaxy() {
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
       
-      // Clear canvas with full transparency
-      ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-      
-      // Draw center glow - more defined and less blurry for dark mode
+      // Draw center glow
       const gradient = ctx.createRadialGradient(
-        this.centerX, this.centerY, 0,
-        this.centerX, this.centerY, this.galaxyRadius * 0.25
+        centerX, centerY, 0,
+        centerX, centerY, Math.min(width, height) * 0.25
       );
       
-      if (this.isDarkTheme) {
+      // Adjust glow based on theme
+      if (isDarkTheme) {
         gradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
         gradient.addColorStop(0.2, 'rgba(180, 200, 255, 0.08)');
         gradient.addColorStop(0.5, 'rgba(80, 100, 255, 0.05)');
@@ -801,63 +820,19 @@
       
       ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.arc(this.centerX, this.centerY, this.galaxyRadius * 0.4, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, Math.min(width, height) * 0.4, 0, Math.PI * 2);
       ctx.fill();
       
-      // Draw explosion particles (on top of everything for dramatic effect)
-      for (let i = 0; i < this.explosionParticles.length; i++) {
-        const particle = this.explosionParticles[i];
+      // Draw dust particles
+      for (let i = 0; i < dust.length; i++) {
+        const d = dust[i];
         
-        // Calculate opacity based on remaining life
-        const opacity = particle.life / particle.maxLife;
-        
-        // Draw particle with glow
-        const glow = ctx.createRadialGradient(
-          this.centerX + particle.x,
-          this.centerY + particle.y,
-          0,
-          this.centerX + particle.x,
-          this.centerY + particle.y,
-          particle.size * 3
-        );
-        
-        glow.addColorStop(0, particle.color.replace('1)', `${opacity})`));
-        glow.addColorStop(1, particle.color.replace('1)', '0)'));
-        
-        ctx.fillStyle = glow;
+        ctx.fillStyle = d.color;
         ctx.beginPath();
         ctx.arc(
-          this.centerX + particle.x,
-          this.centerY + particle.y,
-          particle.size * 3,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
-        
-        // Particle core
-        ctx.fillStyle = particle.color.replace('1)', `${opacity})`);
-        ctx.beginPath();
-        ctx.arc(
-          this.centerX + particle.x,
-          this.centerY + particle.y,
-          particle.size,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
-      }
-      
-      // Draw dust particles behind stars
-      for (let i = 0; i < this.dustParticles.length; i++) {
-        const dust = this.dustParticles[i];
-        
-        ctx.fillStyle = dust.color;
-        ctx.beginPath();
-        ctx.arc(
-          this.centerX + dust.x, 
-          this.centerY + dust.y, 
-          dust.size, 
+          centerX + d.x, 
+          centerY + d.y, 
+          d.size, 
           0, 
           Math.PI * 2
         );
@@ -865,568 +840,252 @@
       }
       
       // Draw stars
-      for (let i = 0; i < this.stars.length; i++) {
-        const star = this.stars[i];
+      for (let i = 0; i < stars.length; i++) {
+        const star = stars[i];
         
-        // Skip stars that would be outside the visible area
+        // Skip stars outside the visible area
         if (
-          this.centerX + star.x < -20 || 
-          this.centerX + star.x > this.canvasWidth + 20 ||
-          this.centerY + star.y < -20 || 
-          this.centerY + star.y > this.canvasHeight + 20
+          centerX + star.x < -20 || 
+          centerX + star.x > width + 20 ||
+          centerY + star.y < -20 || 
+          centerY + star.y > height + 20
         ) {
           continue;
         }
         
-        // Draw star with adjusted rendering for clarity in dark mode
-        const starOpacity = this.isDarkTheme ? star.currentBrightness : star.currentBrightness * 0.8;
-        const glowSize = this.isDarkTheme ? 2 : 3; // Smaller glow in dark mode for less blur
+        // Calculate brightness
+        const starOpacity = (star.currentBrightness || star.brightness) * (isDarkTheme ? 1 : 0.8);
         
-        // Create more defined stars in dark mode
-        if (this.isDarkTheme) {
-          // Core glow
-          const glow = ctx.createRadialGradient(
-            this.centerX + star.x, 
-            this.centerY + star.y, 
-            0,
-            this.centerX + star.x, 
-            this.centerY + star.y, 
-            star.size * glowSize
-          );
-          
-          // Crisper gradient with harder edge
-          glow.addColorStop(0, star.color.replace('1)', `${starOpacity})`));
-          glow.addColorStop(0.7, star.color.replace('1)', `${starOpacity * 0.3})`));
-          glow.addColorStop(1, star.color.replace('1)', '0)'));
-          
-          ctx.fillStyle = glow;
-          ctx.beginPath();
-          ctx.arc(
-            this.centerX + star.x, 
-            this.centerY + star.y, 
-            star.size * glowSize, 
-            0, 
-            Math.PI * 2
-          );
-          ctx.fill();
-          
-          // Draw star center with sharper edge
-          ctx.fillStyle = star.color.replace('1)', `${starOpacity * 1.2})`); // Brighter center
-          ctx.beginPath();
-          ctx.arc(
-            this.centerX + star.x, 
-            this.centerY + star.y, 
-            star.size * 0.7, // Slightly smaller core for sharp appearance
-            0, 
-            Math.PI * 2
-          );
-          ctx.fill();
-        } else {
-          // Light mode - softer stars
-          const glow = ctx.createRadialGradient(
-            this.centerX + star.x, 
-            this.centerY + star.y, 
-            0,
-            this.centerX + star.x, 
-            this.centerY + star.y, 
-            star.size * glowSize
-          );
-          
-          glow.addColorStop(0, star.color.replace('1)', `${starOpacity})`));
-          glow.addColorStop(1, star.color.replace('1)', '0)'));
-          
-          ctx.fillStyle = glow;
-          ctx.beginPath();
-          ctx.arc(
-            this.centerX + star.x, 
-            this.centerY + star.y, 
-            star.size * glowSize, 
-            0, 
-            Math.PI * 2
-          );
-          ctx.fill();
-          
-          // Draw star center
-          ctx.fillStyle = star.color.replace('1)', `${starOpacity})`);
-          ctx.beginPath();
-          ctx.arc(
-            this.centerX + star.x, 
-            this.centerY + star.y, 
-            star.size, 
-            0, 
-            Math.PI * 2
-          );
-          ctx.fill();
-        }
+        // Draw star
+        const glow = ctx.createRadialGradient(
+          centerX + star.x, 
+          centerY + star.y, 
+          0,
+          centerX + star.x, 
+          centerY + star.y, 
+          star.size * (isDarkTheme ? 2 : 3)
+        );
         
-        // Add lens flare for brighter stars - adjusted for dark mode
-        if ((this.isDarkTheme && star.size > 1.8) || (!this.isDarkTheme && star.size > 2)) {
-          const flareOpacity = this.isDarkTheme ? starOpacity * 0.5 : starOpacity * 0.3;
-          const flareLength = this.isDarkTheme ? star.size * 4 : star.size * 5;
-          const flareWidth = this.isDarkTheme ? 0.4 : 0.5;
-          
-          ctx.strokeStyle = `rgba(255, 255, 255, ${flareOpacity})`;
-          ctx.lineWidth = flareWidth;
-          
-          // Horizontal flare
-          ctx.beginPath();
-          ctx.moveTo(this.centerX + star.x - flareLength, this.centerY + star.y);
-          ctx.lineTo(this.centerX + star.x + flareLength, this.centerY + star.y);
-          ctx.stroke();
-          
-          // Vertical flare
-          ctx.beginPath();
-          ctx.moveTo(this.centerX + star.x, this.centerY + star.y - flareLength);
-          ctx.lineTo(this.centerX + star.x, this.centerY + star.y + flareLength);
-          ctx.stroke();
-        }
+        glow.addColorStop(0, star.color.replace(/[^,]+\)/, `${starOpacity})`));
+        glow.addColorStop(1, star.color.replace(/[^,]+\)/, '0)'));
+        
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(
+          centerX + star.x, 
+          centerY + star.y, 
+          star.size * (isDarkTheme ? 2 : 3), 
+          0, 
+          Math.PI * 2
+        );
+        ctx.fill();
+        
+        // Draw star core
+        ctx.fillStyle = star.color.replace(/[^,]+\)/, `${starOpacity})`);
+        ctx.beginPath();
+        ctx.arc(
+          centerX + star.x, 
+          centerY + star.y, 
+          star.size, 
+          0, 
+          Math.PI * 2
+        );
+        ctx.fill();
       }
     }
-
-    animate() {
-      this.updateStars();
-      this.drawGalaxy();
-      requestAnimationFrame(this.animate.bind(this));
-    }
-
-    handleResize() {
-      this.updateCanvasSize();
-      // Regenerate with new dimensions
-      this.generateStars();
-      this.generateDust();
-    }
-
-    updateTheme(isDark) {
-      this.isDarkTheme = isDark;
-    }
     
-    // Handle mouse movement
-    handleMouseMove(event) {
-      const rect = this.canvas.getBoundingClientRect();
-      this.mouseX = event.clientX - rect.left;
-      this.mouseY = event.clientY - rect.top;
-      this.mouseActive = true;
+    // Animation loop
+    function animate() {
+      // For smoother performance
+      if (!document.hidden) {
+        updateStars();
+        drawGalaxy();
+      }
       
-      // Update custom cursor
-      this.updateCustomCursor(event.clientX, event.clientY);
+      // Always request the next frame immediately
+      animationFrameId = window.requestAnimationFrame(animate);
     }
     
-    // Handle mouse enter
-    handleMouseEnter() {
-      // Show custom cursor
-      const cursor = document.querySelector('.custom-cursor');
+    // Animation frame ID to keep track of requestAnimationFrame
+    let animationFrameId = null;
+    
+    // Ensure animation continues running
+    function ensureAnimationRunning() {
+      // Make sure animation is running
+      if (!animationFrameId) {
+        animate();
+      }
+    }
+    
+    // Variables to track mouse state
+    let mouseJustStopped = false;
+    
+    // Window resize handler
+    window.addEventListener('resize', function() {
+      init();
+    });
+    
+    // Track mouse position for star interaction
+    let mouseX = -1000;
+    let mouseY = -1000;
+    let mouseActive = false;
+    let mouseLastMoved = 0;
+    let mouseMoving = false;
+    let mouseMoveTimeout = null;
+    
+    // Variables to track mouse movement for cursor rotation
+    let prevMouseX = 0;
+    let prevMouseY = 0;
+    let lastValidDx = 0;
+    let lastValidDy = 0;
+    let rocketAngle = 0;
+    
+    // Mouse move for cursor effect and star interaction
+    document.addEventListener('mousemove', function(e) {
+      // Update custom cursor position with rocket rotation
       if (cursor) {
+        cursor.style.left = `${e.clientX}px`;
+        cursor.style.top = `${e.clientY}px`;
         cursor.style.opacity = '1';
-      }
-    }
-    
-    // Handle mouse leave
-    handleMouseLeave() {
-      this.mouseActive = false;
-      
-      // Hide custom cursor
-      const cursor = document.querySelector('.custom-cursor');
-      if (cursor) {
-        cursor.style.opacity = '0';
-      }
-    }
-    
-    // Update custom cursor position and appearance
-    updateCustomCursor(x, y) {
-      const cursor = document.querySelector('.custom-cursor');
-      if (cursor) {
-        cursor.style.left = `${x}px`;
-        cursor.style.top = `${y}px`;
         
-        // Make cursor bigger when moving fast (velocity effect)
+        // Calculate movement direction and speed
         const now = Date.now();
-        if (!this.lastCursorUpdate) {
-          this.lastCursorUpdate = { time: now, x, y };
-        } else {
-          const dt = now - this.lastCursorUpdate.time;
-          if (dt > 0) {
-            const dx = x - this.lastCursorUpdate.x;
-            const dy = y - this.lastCursorUpdate.y;
-            const speed = Math.sqrt(dx*dx + dy*dy) / dt * 20;
+        const moveTime = now - mouseLastMoved;
+        
+        if (moveTime > 0 && mouseLastMoved !== 0) {
+          const dx = e.clientX - prevMouseX;
+          const dy = e.clientY - prevMouseY;
+          const distance = Math.sqrt(dx*dx + dy*dy);
+          const speed = distance / moveTime * 10;
+          
+          // Only update angle if there's significant movement
+          if (distance > 2) {
+            // Store the movement vector if it's valid
+            lastValidDx = dx;
+            lastValidDy = dy;
+          }
+          
+          // Always calculate angle using the last valid movement
+          // This allows the rocket to maintain its direction even when the mouse slows down
+          if (lastValidDx !== 0 || lastValidDy !== 0) {
+            // Calculate angle in the direction of travel
+            const angle = Math.atan2(lastValidDy, lastValidDx);
             
-            // Scale cursor based on speed
-            const size = Math.min(50, Math.max(30, 30 + speed));
-            cursor.style.width = `${size}px`;
-            cursor.style.height = `${size}px`;
+            // Convert to degrees
+            // The 🚀 emoji points up by default, which is -90 degrees in our system
+            // So we add 90 degrees to make it point in the direction of movement
+            rocketAngle = angle * (180 / Math.PI) + 90;
             
-            // Update the last position and time
-            this.lastCursorUpdate = { time: now, x, y };
+            // Apply rocket rotation - note we rotate in the opposite direction (negative angle)
+            // This makes the rocket nose (top of the emoji) point in the direction of movement
+            cursor.style.transform = `translate(-50%, -50%) rotate(${rocketAngle}deg)`;
+          }
+          
+          // Adjust rocket glow based on speed
+          const glowIntensity = Math.min(20, 10 + speed * 0.5);
+          const glowColor = mouseMoving ? 
+            `rgba(80, 180, 255, ${Math.min(0.9, 0.5 + speed * 0.04)})` : 
+            'rgba(100, 200, 255, 0.5)';
+          
+          // Add rocket trail glow effect
+          cursor.style.textShadow = `0 0 ${glowIntensity}px ${glowColor}, 
+                                    0 0 ${glowIntensity * 1.5}px rgba(120, 210, 255, 0.4)`;
+          
+          // Add rocket thrust animation at high speeds
+          if (speed > 8) {
+            cursor.style.animation = 'rocket-thrust 0.8s infinite alternate';
+          } else {
+            cursor.style.animation = 'none';
+            // Just add size boost at lower speeds
+            const sizeBoost = Math.min(1.5, 1 + speed * 0.01);
+            cursor.style.fontSize = `${Math.round(32 * sizeBoost)}px`;
           }
         }
+        
+        // Update previous position for next movement calculation
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+        mouseLastMoved = now;
       }
-    }
+      
+      // Calculate canvas-relative mouse position
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+      mouseActive = true;
+      
+      // Flag when mouse is actively moving
+      mouseMoving = true;
+      
+      // Reset flag after mouse stops moving to trigger gravity return
+      clearTimeout(mouseMoveTimeout);
+      mouseMoveTimeout = setTimeout(function() {
+        // When mouse stops, set flag to trigger gravitational pull
+        mouseJustStopped = true;
+        mouseMoving = false;
+        // Mouse stopped - activate gravity pull effect
+      }, 150);
+      
+      // Ensure animation is running during mouse interaction
+      ensureAnimationRunning();
+    });
     
-    // Apply scroll-based distortion to stars and dust
-    applyScrollExplosion(x, y, direction, scrollForce) {
-      // Local coordinates relative to canvas
-      const localX = x - this.centerX;
-      const localY = y - this.centerY;
-      
-      // Create subtle celestial effect (fewer particles for celestial feel)
-      const particleCount = Math.min(Math.floor(scrollForce * 6), 25);
-      this.createCelestialEffect(localX, localY, particleCount, direction);
-      
-      // Calculate vertical force vector based on scroll direction with gentler bias
-      // (for more subtle celestial movement rather than explosive)
-      const verticalBias = direction * 1.2; // More gentle vertical influence for celestial feel
-      
-      // Apply gentler force to stars - more celestial flow than explosion
-      for (let i = 0; i < this.stars.length; i++) {
-        const star = this.stars[i];
-        
-        // Calculate distance from scroll center point
-        const dx = star.x - localX;
-        const dy = star.y - localY;
-        const distanceSquared = dx * dx + dy * dy;
-        const distance = Math.sqrt(distanceSquared);
-        
-        // Use wider influence radius for flowing effect
-        // Scale the radius with scroll force for more gradual effect
-        const influenceRadius = this.mouseRadius * (3 + scrollForce * 0.3);
-        
-        // If within influence radius, apply flowing force
-        if (distance < influenceRadius) {
-          // Calculate force with smoother falloff for celestial patterns
-          // Use sine curve for more natural falloff
-          const angle = (1 - distance / influenceRadius) * Math.PI;
-          const distanceFactor = Math.sin(angle) * 0.8;
-          const force = distanceFactor * this.clickForce * scrollForce * 0.7 * star.interactStrength;
-          
-          // Calculate swirl effect for more cosmic motion
-          const swirlFactor = 0.6;
-          const swirlAngle = Math.atan2(dy, dx) + (Math.PI / 2) * direction * swirlFactor;
-          
-          // Apply directional force with swirl component
-          const normalizedDx = Math.cos(swirlAngle) + dx / (distance * 5 || 1); 
-          const normalizedDy = Math.sin(swirlAngle) + (dy / (distance * 5 || 1) + verticalBias);
-          
-          // Apply gentler force to velocity
-          star.velocityX += normalizedDx * force / star.mass * 0.8;
-          star.velocityY += normalizedDy * force / star.mass * 1.2;
-        }
-      }
-      
-      // Apply similar effect to dust particles but with different pattern
-      for (let i = 0; i < this.dustParticles.length; i++) {
-        const dust = this.dustParticles[i];
-        
-        // Calculate distance from scroll center point
-        const dx = dust.x - localX;
-        const dy = dust.y - localY;
-        const distanceSquared = dx * dx + dy * dy;
-        const distance = Math.sqrt(distanceSquared);
-        
-        // Even larger influence radius for dust - cosmic nebula feel
-        const influenceRadius = this.mouseRadius * (5 + scrollForce * 0.4);
-        
-        // If within influence radius, apply gentle force
-        if (distance < influenceRadius) {
-          // Calculate force with gentler cosmic nebula effect
-          const distanceFactor = 0.5 * (1 + Math.cos(Math.PI * distance / influenceRadius));
-          const force = distanceFactor * this.clickForce * scrollForce * 1.8 * dust.interactStrength;
-          
-          // Calculate cosmic flow - dust moves in slightly different pattern than stars
-          const flowAngle = Math.atan2(dy, dx) + (Math.PI / 3) * direction;
-          
-          // Apply directional force with flow component
-          const normalizedDx = Math.cos(flowAngle) * 0.7 + dx / (distance * 8 || 1);
-          const normalizedDy = Math.sin(flowAngle) * 0.7 + (dy / (distance * 8 || 1) + verticalBias * 0.8);
-          
-          // Apply gentle force to create flowing nebula effect
-          dust.velocityX += normalizedDx * force / dust.mass * 0.8;
-          dust.velocityY += normalizedDy * force / dust.mass * 1.4;
-        }
-      }
-    }
-    
-    // Apply click explosion force to stars and dust
-    applyClickExplosion(x, y) {
-      // Local coordinates relative to canvas
-      const localX = x - this.centerX;
-      const localY = y - this.centerY;
-      
-      // Create visual explosion particles
-      this.createExplosion(localX, localY);
-      
-      // Apply force to stars
-      for (let i = 0; i < this.stars.length; i++) {
-        const star = this.stars[i];
-        
-        // Calculate distance from click
-        const dx = star.x - localX;
-        const dy = star.y - localY;
-        const distanceSquared = dx * dx + dy * dy;
-        const distance = Math.sqrt(distanceSquared);
-        
-        // If within influence radius, apply explosion force (larger than mouse radius)
-        if (distance < this.mouseRadius * 1.5) {
-          // Calculate force (stronger when closer)
-          const force = (1 - distance / (this.mouseRadius * 1.5)) * this.clickForce * star.interactStrength;
-          
-          // Apply force to velocity (normalized direction * force / mass)
-          star.velocityX += (dx / distance) * force / star.mass;
-          star.velocityY += (dy / distance) * force / star.mass;
-        }
-      }
-      
-      // Apply force to dust particles
-      for (let i = 0; i < this.dustParticles.length; i++) {
-        const dust = this.dustParticles[i];
-        
-        // Calculate distance from click
-        const dx = dust.x - localX;
-        const dy = dust.y - localY;
-        const distanceSquared = dx * dx + dy * dy;
-        const distance = Math.sqrt(distanceSquared);
-        
-        // If within influence radius, apply explosion force (larger for dust)
-        if (distance < this.mouseRadius * 2) {
-          // Calculate force (stronger when closer)
-          const force = (1 - distance / (this.mouseRadius * 2)) * this.clickForce * 1.5 * dust.interactStrength;
-          
-          // Apply force to velocity (normalized direction * force / mass)
-          dust.velocityX += (dx / distance) * force / dust.mass;
-          dust.velocityY += (dy / distance) * force / dust.mass;
-        }
-      }
-      
-      // Make custom cursor larger briefly for click feedback
-      const cursor = document.querySelector('.custom-cursor');
+    // Mouse leave - reset interaction and trigger gravity return
+    document.addEventListener('mouseleave', function() {
+      // Hide rocket cursor with a nice fade
       if (cursor) {
-        cursor.style.width = '60px';
-        cursor.style.height = '60px';
+        // Add a bit of a fly-away effect when leaving
+        cursor.style.transition = "opacity 0.5s, transform 0.5s";
         
-        // Reset size after animation
+        // Make the rocket "fly away" in the last direction it was moving
+        // Use the last valid movement direction
+        const flyAngle = lastValidDx !== 0 || lastValidDy !== 0 
+          ? Math.atan2(lastValidDy, lastValidDx) * (180 / Math.PI) + 90
+          : rocketAngle;
+          
+        // Apply the rocket rotation and fly-away effect
+        cursor.style.transform = `translate(-50%, -50%) rotate(${flyAngle}deg) translate(0, -100px) scale(0.5)`;
+        
+        // Fade out
+        cursor.style.opacity = '0';
+        
+        // Reset transition after the animation
         setTimeout(() => {
-          cursor.style.width = '30px';
-          cursor.style.height = '30px';
-        }, 200);
+          cursor.style.transition = "opacity 0.2s, text-shadow 0.2s";
+        }, 500);
       }
-    }
+      
+      // Move mouse off-canvas to remove influence
+      mouseX = -1000;
+      mouseY = -1000;
+      mouseActive = false;
+      mouseMoving = false;
+      
+      // Set flag to trigger gravitational pull
+      mouseJustStopped = true;
+    });
     
-    // Setup interaction events
-    setupMouseInteraction() {
-      // Track scroll position to create explosion effect
-      let lastScrollY = window.scrollY;
-      let lastScrollTime = Date.now();
-      let scrollDirection = 0;
-      let scrollVelocity = 0;
-      let isScrolling = false;
-      let scrollDetectionTimeout = null;
-      let lastExplosionTime = 0;
-      
-      // Function to create cosmic flow at start of scrolling
-      const createCelestialScrollEffect = () => {
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
-        const rect = this.canvas.getBoundingClientRect();
-        
-        // Number of celestial flows based on viewport size
-        const numFlows = Math.floor((viewportWidth / 500) * 2) + 1;
-        
-        // Create primary flow pattern at center
-        const centerX = viewportWidth / 2 - rect.left;
-        const centerY = viewportHeight / 2 - rect.top + (scrollDirection * viewportHeight * 0.1);
-        
-        // Apply primary celestial distortion (gentler force)
-        this.applyScrollExplosion(centerX, centerY, scrollDirection, 5);
-        
-        // Create additional subtle flows in a gentle pattern
-        for (let i = 0; i < numFlows; i++) {
-          // Calculate positions in an arc pattern in the direction of scroll
-          const arcSpread = Math.PI * 0.7; // 126 degrees arc
-          const arcStart = -Math.PI * 0.35 + (scrollDirection < 0 ? Math.PI : 0); // Different arc based on direction
-          const angle = arcStart + (i / numFlows) * arcSpread;
-          
-          // Position more flows in scroll direction for natural feel
-          const distance = viewportHeight * (0.2 + Math.random() * 0.1);
-          
-          const xPos = centerX + Math.cos(angle) * distance;
-          const yPos = centerY + Math.sin(angle) * distance;
-          
-          // Apply gentle celestial effects with varied timing
-          setTimeout(() => {
-            const force = 3 - (i * 0.4); // Gentler forces
-            this.applyScrollExplosion(xPos, yPos, scrollDirection, force);
-          }, i * 100 + Math.random() * 50);
-        }
-      };
-      
-      // Add scroll event listener with requestAnimationFrame to ensure smooth animation
-      let animationFrameId = null;
-      let isScrollAnimating = false;
-      
-      // Function to ensure animate() keeps running during scroll
-      const ensureAnimationContinues = () => {
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-        }
-        
-        const animateScroll = () => {
-          // Keep animation running for a bit after scrolling stops
-          if (isScrolling) {
-            animationFrameId = requestAnimationFrame(animateScroll);
-          } else if (isScrollAnimating) {
-            // Continue for a short while after scrolling stops
-            animationFrameId = requestAnimationFrame(animateScroll);
-            // Check if we should stop extra animation
-            if (Date.now() - lastScrollTime > 800) {
-              isScrollAnimating = false;
-            }
-          }
-        };
-        
-        isScrollAnimating = true;
-        animateScroll();
-      };
-      
-      // Main scroll event listener
-      window.addEventListener('scroll', () => {
-        // Calculate time since last scroll
-        const currentTime = Date.now();
-        const timeDiff = currentTime - lastScrollTime;
-        lastScrollTime = currentTime;
-        
-        // Determine scroll direction and distance
-        const currentScrollY = window.scrollY;
-        const scrollDiff = currentScrollY - lastScrollY;
-        scrollDirection = scrollDiff > 0 ? 1 : -1;
-        
-        // Calculate scroll velocity (pixels per millisecond)
-        scrollVelocity = Math.abs(scrollDiff) / (timeDiff || 1);
-        
-        // Make sure animation continues during scrolling
-        ensureAnimationContinues();
-        
-        // Detect start of scrolling for main celestial effect
-        if (!isScrolling && Math.abs(scrollDiff) > 20) {
-          isScrolling = true;
-          
-          // Only trigger main effect if not too frequent
-          if (currentTime - lastExplosionTime > 400) {
-            // Trigger celestial flow at scroll start
-            createCelestialScrollEffect();
-            lastExplosionTime = currentTime;
-          }
-        }
-        
-        // Continue gentle celestial effects during scrolling
-        if (isScrolling && Math.abs(scrollDiff) > 15) {
-          // Add subtle continuous effects during scrolling (less frequent than before)
-          if (currentTime - lastExplosionTime > 250) {
-            const viewportHeight = window.innerHeight;
-            const viewportWidth = window.innerWidth;
-            const rect = this.canvas.getBoundingClientRect();
-            
-            // Create subtle distortion in the direction of scrolling
-            const xVariance = (Math.random() * 0.5 - 0.25) * viewportWidth;
-            const x = (viewportWidth / 2) + xVariance - rect.left;
-            
-            // Position slightly ahead in scroll direction
-            const yOffset = scrollDirection * viewportHeight * 0.15;
-            const y = (viewportHeight / 2) - rect.top + yOffset;
-            
-            // Gentler force for more celestial feel
-            const force = Math.min(scrollVelocity * 6, 4);
-            
-            // Apply the celestial distortion effect
-            this.applyScrollExplosion(x, y, scrollDirection, force);
-            lastExplosionTime = currentTime;
-          }
-        }
-        
-        // Update last scroll position
-        lastScrollY = currentScrollY;
-        
-        // Keep interaction active during scrolling
-        this.mouseActive = true;
-        
-        // Clear existing timeout
-        if (scrollDetectionTimeout) {
-          clearTimeout(scrollDetectionTimeout);
-        }
-        
-        // Detect when scrolling stops but keep animation going longer
-        scrollDetectionTimeout = setTimeout(() => {
-          isScrolling = false;
-          // Don't immediately deactivate mouse interaction
-          // Let the animation continue naturally
-          setTimeout(() => {
-            if (!isScrolling) {
-              this.mouseActive = false;
-            }
-          }, 600);
-        }, 300);
-      }, { passive: true });
-      
-      // Keep click explosion for direct interaction
-      this.canvas.addEventListener('click', (e) => {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        this.applyClickExplosion(x, y);
-      });
-      
-      // Document mouse handling for cursor
-      document.addEventListener('mousemove', (e) => {
-        this.updateCustomCursor(e.clientX, e.clientY);
-      });
-      
-      // Touch events
-      this.canvas.addEventListener('touchend', (e) => {
-        if (e.touches.length > 0) {
-          const rect = this.canvas.getBoundingClientRect();
-          const x = e.touches[0].clientX - rect.left;
-          const y = e.touches[0].clientY - rect.top;
-          this.applyClickExplosion(x, y);
-        }
-      });
-    }
-  }
-
-  // Initialize and set up animation
-  document.addEventListener('DOMContentLoaded', () => {
-    const galaxyCanvas = document.querySelector('.galaxy-canvas') as HTMLCanvasElement | null;
-    let galaxyAnimation: GalaxyAnimation | null = null;
+    // Handle mouse enter for consistency
+    document.addEventListener('mouseenter', function() {
+      mouseActive = true;
+    });
     
-    // Check for browser support and performance
-    if (
-      galaxyCanvas && 
-      !navigator.userAgent.match(/firefox/i) && // Skip in Firefox due to performance issues
-      window.matchMedia('(prefers-reduced-motion: no-preference)').matches // Check for reduced motion preference
-    ) {
-      galaxyAnimation = new GalaxyAnimation(galaxyCanvas);
-      
-      // Setup mouse interaction
-      galaxyAnimation.setupMouseInteraction();
-      
-      // Handle window resize
-      window.addEventListener('resize', () => {
-        if (galaxyAnimation) {
-          galaxyAnimation.handleResize();
+    // Theme change detection
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.attributeName === 'data-theme') {
+          isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
         }
       });
-      
-      // Detect theme changes and update
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.attributeName === 'data-theme' && galaxyAnimation) {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            galaxyAnimation.updateTheme(isDark);
-          }
-        });
-      });
-      
-      // Start observing the document root for theme attribute changes
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['data-theme']
-      });
-    }
+    });
+    
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+    
+    // Initialize and start animation
+    init();
+    animate();
   });
 </script>
