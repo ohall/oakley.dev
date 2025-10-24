@@ -4,9 +4,9 @@ import PageLayout from "@/layouts/Base.astro";
 
 // Define interface for Medium post data
 interface MediumPost {
-  link: string;
-  title: string;
-  pubDate: string;
+	link: string;
+	title: string;
+	pubDate: string;
 }
 
 const mediumPosts = await fetch(
@@ -24,7 +24,7 @@ const mediumPosts = await fetch(
 		</p>
 		<SocialList />
 	</section>
-	
+
 	<section aria-label="Blog post list" class="mt-16">
 		<h2 class="title mb-4 text-xl">Posts</h2>
 		<ul class="space-y-4">
@@ -40,20 +40,52 @@ const mediumPosts = await fetch(
 			}
 		</ul>
 	</section>
-	
+
 	<section aria-label="Live events" class="mt-16" id="live">
 		<h2 class="title mb-4 text-xl">Live</h2>
-		<div class="rounded-lg overflow-hidden mb-4">
-			<img 
-				src="/leaddev2024.jpeg" 
-				alt="Oakley Hall hosting a session at LeadDev New York 2024" 
+		<div class="mb-4 overflow-hidden rounded-lg">
+			<img
+				src="/leaddev2025.jpeg"
+				alt="Oakley Hall co-hosting a session at LeadDev New York 2025"
 				class="w-full"
+				fetchpriority="high"
+				loading="eager"
+				decoding="sync"
 			/>
-			<div class="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-				<h3 class="text-lg mb-2 font-bold text-slate-900 dark:text-white">
-					Host of Next Steps AMA Session on Preparing for the Role of Principal Engineer at LeadDev NYC
+			<div class="border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+				<h3 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">
+					Co-host of Table Talk session on embedding observability in engineering culture.
 				</h3>
-				<a href="https://lnkd.in/ez-wapXr" class="text-blue-600 dark:text-blue-400 hover:underline font-medium" target="_blank" rel="noopener noreferrer">
+				<a
+					href="https://lnkd.in/ez-wapXr"
+					class="font-medium text-blue-600 hover:underline dark:text-blue-400"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					Learn more
+				</a>
+			</div>
+		</div>
+		<div class="mb-4 overflow-hidden rounded-lg">
+			<img
+				src="/leaddev2024.jpeg"
+				alt="Oakley Hall hosting a session at LeadDev New York 2024"
+				class="w-full"
+				fetchpriority="high"
+				loading="eager"
+				decoding="sync"
+			/>
+			<div class="border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+				<h3 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">
+					Host of Next Steps AMA Session on Preparing for the Role of Principal Engineer at LeadDev
+					NYC
+				</h3>
+				<a
+					href="https://lnkd.in/ez-wapXr"
+					class="font-medium text-blue-600 hover:underline dark:text-blue-400"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
 					Learn more
 				</a>
 			</div>
