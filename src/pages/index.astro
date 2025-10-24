@@ -1,6 +1,9 @@
 ---
+import { Image } from "astro:assets";
 import SocialList from "@/components/SocialList.astro";
 import PageLayout from "@/layouts/Base.astro";
+import leaddev2024 from "@/assets/leaddev2024.jpeg";
+import leaddev2025 from "@/assets/leaddev2025.jpeg";
 
 // Define interface for Medium post data
 interface MediumPost {
@@ -14,16 +17,16 @@ let mediumPosts: MediumPost[] = [];
 try {
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-	
+
 	const response = await fetch(
 		"https://api.rss2json.com/v1/api.json?rss_url=https://medium.com/feed/@oakley349",
-		{ signal: controller.signal }
+		{ signal: controller.signal },
 	);
 	clearTimeout(timeoutId);
-	
+
 	if (response.ok) {
 		const data = await response.json();
-		mediumPosts = data.items?.slice(0, 5) || []; // Limit to 5 posts
+		mediumPosts = data.items?.slice(0, 15) || []; // Limit to 5 posts
 	}
 } catch (error) {
 	// Fallback to empty array if API fails
@@ -60,14 +63,13 @@ try {
 	<section aria-label="Live events" class="mt-16" id="live">
 		<h2 class="title mb-4 text-xl">Live</h2>
 		<div class="mb-4 overflow-hidden rounded-lg">
-			<img
-				src="/leaddev2025.jpeg"
+			<Image
+				src={leaddev2025}
 				alt="Oakley Hall co-hosting a session at LeadDev New York 2025"
-				class="w-full aspect-[4/3] object-cover"
-				width="400"
-				height="300"
+				class="aspect-video w-full object-cover"
+				widths={[400, 800, 1200]}
+				sizes="(max-width: 768px) 100vw, (max-width: 1024px) 80vw, 1200px"
 				loading="lazy"
-				decoding="async"
 			/>
 			<div class="border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
 				<h3 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">
@@ -84,14 +86,13 @@ try {
 			</div>
 		</div>
 		<div class="mb-4 overflow-hidden rounded-lg">
-			<img
-				src="/leaddev2024.jpeg"
+			<Image
+				src={leaddev2024}
 				alt="Oakley Hall hosting a session at LeadDev New York 2024"
-				class="w-full aspect-[4/3] object-cover"
-				width="400"
-				height="300"
+				class="aspect-video w-full object-cover"
+				widths={[400, 800, 1200]}
+				sizes="(max-width: 768px) 100vw, (max-width: 1024px) 80vw, 1200px"
 				loading="lazy"
-				decoding="async"
 			/>
 			<div class="border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
 				<h3 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">
