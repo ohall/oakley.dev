@@ -18,7 +18,8 @@
       "Bash(npx chrome-devtools-mcp:*)",
       "Bash(nvm install:*)",
       "Bash(nvm use:*)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(ls:*)"
     ]
   },
   "enableAllProjectMcpServers": false
