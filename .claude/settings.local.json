@@ -20,7 +20,8 @@
       "Bash(nvm use:*)",
       "Bash(source:*)",
       "Bash(ls:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(pnpm install:*)"
     ]
   },
   "enableAllProjectMcpServers": false
