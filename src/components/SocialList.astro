@@ -42,6 +42,7 @@ const socialLinks: {
 			socialLinks.map(({ friendlyName, isWebmention, link, name }) => (
 				<li class="flex">
 					<a
+						aria-label={`Visit ${friendlyName} profile`}
 						class="inline-block sm:hover:text-link"
 						href={link}
 						rel={`noreferrer ${isWebmention ? "me authn" : ""}`}
