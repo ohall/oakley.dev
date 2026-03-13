@@ -1,58 +1,41 @@
 ---
-import { Icon } from "astro-icon/components";
-
-/** 
-	Uses https://www.astroicon.dev/getting-started/
-	Find icons via guide: https://www.astroicon.dev/guides/customization/#open-source-icon-sets
-	Only installed pack is: @iconify-json/mdi
-*/
 const socialLinks: {
 	friendlyName: string;
-	isWebmention?: boolean;
 	link: string;
-	name: string;
 }[] = [
 	{
-		friendlyName: "Github",
+		friendlyName: "GitHub",
 		link: "https://github.com/ohall",
-		name: "mdi:github",
 	},
 	{
 		friendlyName: "LinkedIn",
 		link: "https://www.linkedin.com/in/oakleyhall/",
-		name: "mdi:linkedin",
 	},
 	{
 		friendlyName: "Twitter",
 		link: "https://twitter.com/_ohall",
-		name: "mdi:twitter",
 	},
 	{
 		friendlyName: "Medium",
 		link: "https://medium.com/@oakley349",
-		name: "mdi:medium",
 	},
 ];
 ---
 
-<div class="flex flex-wrap items-end gap-x-2">
-	<p>Find me on</p>
-	<ul class="flex flex-1 items-center gap-x-2 sm:flex-initial">
-		{
-			socialLinks.map(({ friendlyName, isWebmention, link, name }) => (
-				<li class="flex">
-					<a
-						aria-label={`Visit ${friendlyName} profile`}
-						class="inline-block sm:hover:text-link"
-						href={link}
-						rel={`noreferrer ${isWebmention ? "me authn" : ""}`}
-						target="_blank"
-					>
-						<Icon aria-hidden="true" class="h-8 w-8" focusable="false" name={name} />
-						<span class="sr-only">{friendlyName}</span>
-					</a>
-				</li>
-			))
-		}
+<nav aria-label="Social links" class="pt-2">
+	<ul class="space-y-2">
+		{socialLinks.map(({ friendlyName, link }) => (
+			<li>
+				<a 
+					href={link}
+					target="_blank"
+					rel="noreferrer"
+					class="social-link group"
+				>
+					<span class="text-text-subtle group-hover:text-accent transition-colors">→</span>
+					<span>{friendlyName}</span>
+				</a>
+			</li>
+		))}
 	</ul>
-</div>
+</nav>
