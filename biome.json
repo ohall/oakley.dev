@@ -8,6 +8,11 @@
 		"includes": ["**", "!**/*.astro"]
 	},
 	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
+	},
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -47,6 +52,9 @@
 			"includes": ["**/*.css"],
 			"linter": {
 				"rules": {
+					"complexity": {
+						"noImportantStyles": "off"
+					},
 					"suspicious": {
 						"noUnknownAtRules": "off"
 					}
