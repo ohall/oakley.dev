@@ -2,7 +2,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AstroConfig, AstroIntegration } from "astro";
 import type { SitemapItem, SitemapOptions } from "../../node_modules/@astrojs/sitemap/dist/index.js";
-import { ZodError } from "zod/v4";
 import { generateSitemap } from "../../node_modules/@astrojs/sitemap/dist/generate-sitemap.js";
 import { writeSitemap } from "../../node_modules/@astrojs/sitemap/dist/write-sitemap.js";
 import { writeSitemapChunk } from "../../node_modules/@astrojs/sitemap/dist/write-sitemap-chunk.js";
@@ -22,7 +21,20 @@ type AstroPageRoute = {
 
 const validateOptions = (validateOptionsModule as { validateOptions: (site: string, opts?: SitemapOptions) => ResolvedSitemapOptions }).validateOptions;
 
-function formatConfigErrorMessage(err: ZodError) {
+type ZodIssueLike = {
+	path: Array<string | number>;
+	message: string;
+};
+
+type ZodErrorLike = {
+	issues: ZodIssueLike[];
+};
+
+function isZodErrorLike(err: unknown): err is ZodErrorLike {
+	return typeof err === "object" && err !== null && Array.isArray((err as ZodErrorLike).issues);
+}
+
+function formatConfigErrorMessage(err: ZodErrorLike) {
 	return err.issues
 		.map((issue) => ` ${issue.path.join(".")}  ${issue.message}.`)
 		.join("\n");
@@ -226,7 +238,7 @@ export default function sitemapCompat(options?: Record<string, unknown>): AstroI
 					await writeSitemap(sitemapConfig, resolvedConfig);
 					logger.info(`\`${outFile}\` created at \`${path.relative(process.cwd(), destDir)}\``);
 				} catch (err) {
-					if (err instanceof ZodError) {
+					if (isZodErrorLike(err)) {
 						logger.warn(formatConfigErrorMessage(err));
 						return;
 					}
