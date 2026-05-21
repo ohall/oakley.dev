@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AstroConfig, AstroIntegration } from "astro";
 import type { SitemapItem, SitemapOptions } from "../../node_modules/@astrojs/sitemap/dist/index.js";
-import { ZodError } from "zod/v4";
+import { ZodError } from "zod";
 import { generateSitemap } from "../../node_modules/@astrojs/sitemap/dist/generate-sitemap.js";
 import { writeSitemap } from "../../node_modules/@astrojs/sitemap/dist/write-sitemap.js";
 import { writeSitemapChunk } from "../../node_modules/@astrojs/sitemap/dist/write-sitemap-chunk.js";
