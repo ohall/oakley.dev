@@ -3,6 +3,7 @@ import { Image } from "astro:assets";
 import PageLayout from "@/layouts/Base.astro";
 import leaddev2024 from "@/assets/leaddev2024.jpeg";
 import leaddev2025 from "@/assets/leaddev2025.jpeg";
+import leaddev2026 from "@/assets/leaddev2026.jpeg";
 
 // Define interface for Medium post data
 interface MediumPost {
@@ -69,6 +70,34 @@ function formatDate(dateStr: string): string {
 		<h2 class="section-title">Speaking</h2>
 		
 		<div class="space-y-10">
+			<!-- LeadDev 2026 -->
+			<article class="group">
+				<div class="overflow-hidden rounded-sm mb-4">
+					<Image
+						src={leaddev2026}
+						alt="Oakley Hall activity host at LeadDev New York 2026"
+						class="w-full aspect-video object-cover transition-transform duration-500 ease-out-quart group-hover:scale-[1.02]"
+						widths={[400, 800, 1200]}
+						sizes="(max-width: 768px) 100vw, 600px"
+						loading="lazy"
+					/>
+				</div>
+				<h3 class="font-display text-lg font-medium mb-2 leading-tight">
+					Activity host at LeadDev New York 2026
+				</h3>
+				<p class="text-sm text-text-muted mb-2 leading-relaxed">
+					New York &bull; September 15 &amp; 16, 2026 &bull; Details coming soon
+				</p>
+				<a
+					href="https://leaddev.com/leaddev-new-york/"
+					class="text-sm text-text-muted hover:text-accent transition-colors"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					View LeadDev New York 2026 event details →
+				</a>
+			</article>
+			
 			<!-- LeadDev 2025 -->
 			<article class="group">
 				<div class="overflow-hidden rounded-sm mb-4">
