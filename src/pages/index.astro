@@ -16,7 +16,7 @@ interface MediumPost {
 let mediumPosts: MediumPost[] = [];
 try {
 	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), 3000);
+	const timeoutId = setTimeout(() => controller.abort(), 10000);
 
 	const response = await fetch(
 		"https://api.rss2json.com/v1/api.json?rss_url=https://medium.com/feed/@oakley349",
@@ -42,17 +42,17 @@ function formatDate(dateStr: string): string {
 
 <PageLayout meta={{ title: "Home" }}>
 	<!-- Posts Section -->
-	<section aria-label="Blog posts" class="mb-20">
+	<section aria-label="Blog posts" class="mb-24">
 		<h2 class="section-title">Writing</h2>
-		<ul class="space-y-4">
+		<ul class="border-t border-border/60">
 			{
 				mediumPosts.map((p) => (
 					<li class="post-item">
 						<time class="post-date" datetime={p.pubDate}>
 							{formatDate(p.pubDate)}
 						</time>
-						<a 
-							href={p.link} 
+						<a
+							href={p.link}
 							target="_blank"
 							rel="noreferrer"
 							class="post-title line-clamp-2"
@@ -66,85 +66,85 @@ function formatDate(dateStr: string): string {
 	</section>
 
 	<!-- Live Events Section -->
-	<section aria-label="Speaking" class="mb-16" id="live">
+	<section aria-label="Speaking" class="mb-8" id="live">
 		<h2 class="section-title">Speaking</h2>
-		
-		<div class="space-y-10">
+
+		<div class="space-y-14">
 			<!-- LeadDev 2026 -->
 			<article class="group">
-				<div class="overflow-hidden rounded-sm mb-4">
+				<div class="mb-5 overflow-hidden rounded-lg border border-border/60">
 					<Image
 						src={leaddev2026}
 						alt="Oakley Hall activity host at LeadDev New York 2026"
-						class="w-full aspect-video object-cover transition-transform duration-500 ease-out-quart group-hover:scale-[1.02]"
+						class="h-auto w-full transition-transform duration-500 ease-out-quart group-hover:scale-[1.015]"
 						widths={[400, 800, 1200]}
 						sizes="(max-width: 768px) 100vw, 600px"
 						loading="lazy"
 					/>
 				</div>
-				<h3 class="font-display text-lg font-medium mb-2 leading-tight">
+				<h3 class="mb-2 font-display text-lg font-medium leading-snug tracking-tight">
 					Activity host at LeadDev New York 2026
 				</h3>
-				<p class="text-sm text-text-muted mb-2 leading-relaxed">
-					New York &bull; September 15 &amp; 16, 2026 &bull; Details coming soon
+				<p class="mb-3 font-mono text-xs text-text-subtle">
+					New York &middot; September 15 &amp; 16, 2026 &middot; Details coming soon
 				</p>
 				<a
 					href="https://leaddev.com/leaddev-new-york/"
-					class="text-sm text-text-muted hover:text-accent transition-colors"
+					class="arrow-link"
 					target="_blank"
 					rel="noopener noreferrer"
 				>
-					View LeadDev New York 2026 event details →
+					View LeadDev New York 2026 event details <span aria-hidden="true" class="arrow">→</span>
 				</a>
 			</article>
-			
+
 			<!-- LeadDev 2025 -->
 			<article class="group">
-				<div class="overflow-hidden rounded-sm mb-4">
+				<div class="mb-5 overflow-hidden rounded-lg border border-border/60">
 					<Image
 						src={leaddev2025}
 						alt="Oakley Hall co-hosting a session at LeadDev New York 2025"
-						class="w-full aspect-video object-cover transition-transform duration-500 ease-out-quart group-hover:scale-[1.02]"
+						class="h-auto w-full transition-transform duration-500 ease-out-quart group-hover:scale-[1.015]"
 						widths={[400, 800, 1200]}
 						sizes="(max-width: 768px) 100vw, 600px"
 						loading="lazy"
 					/>
 				</div>
-				<h3 class="font-display text-lg font-medium mb-2 leading-tight">
+				<h3 class="mb-2 font-display text-lg font-medium leading-snug tracking-tight">
 					Co-host of Table Talk session on embedding observability in engineering culture
 				</h3>
 				<a
 					href="https://lnkd.in/ez-wapXr"
-					class="text-sm text-text-muted hover:text-accent transition-colors"
+					class="arrow-link"
 					target="_blank"
 					rel="noopener noreferrer"
 				>
-					View LeadDev New York 2025 session details →
+					View LeadDev New York 2025 session details <span aria-hidden="true" class="arrow">→</span>
 				</a>
 			</article>
-			
+
 			<!-- LeadDev 2024 -->
 			<article class="group">
-				<div class="overflow-hidden rounded-sm mb-4">
+				<div class="mb-5 overflow-hidden rounded-lg border border-border/60">
 					<Image
 						src={leaddev2024}
 						alt="Oakley Hall hosting a session at LeadDev New York 2024"
-						class="w-full aspect-video object-cover transition-transform duration-500 ease-out-quart group-hover:scale-[1.02]"
+						class="h-auto w-full transition-transform duration-500 ease-out-quart group-hover:scale-[1.015]"
 						widths={[400, 800, 1200]}
 						sizes="(max-width: 768px) 100vw, 600px"
 						loading="lazy"
 					/>
 				</div>
-				<h3 class="font-display text-lg font-medium mb-2 leading-tight">
+				<h3 class="mb-2 font-display text-lg font-medium leading-snug tracking-tight">
 					Host of Next Steps AMA Session on Preparing for the Role of Principal Engineer
 				</h3>
 				<a
 					href="https://lnkd.in/ez-wapXr"
-					class="text-sm text-text-muted hover:text-accent transition-colors"
+					class="arrow-link"
 					target="_blank"
 					rel="noopener noreferrer"
 				>
-					View LeadDev New York 2024 AMA details →
+					View LeadDev New York 2024 AMA details <span aria-hidden="true" class="arrow">→</span>
 				</a>
 			</article>
 		</div>

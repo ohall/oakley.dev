@@ -1,23 +1,65 @@
 ---
 import SocialList from "@/components/SocialList.astro";
+import { menuLinks } from "@/site-config";
+
+const pathname = Astro.url.pathname;
 ---
 
-<header class="space-y-6">
+<header class="space-y-8">
 	<!-- Name Block -->
-	<div class="space-y-0">
-		<h1 class="font-display text-5xl md:text-6xl font-bold tracking-tight leading-none">
+	<div>
+		<h1 class="font-display text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
 			<span class="block">Oakley</span>
 			<span class="block text-text-muted">Hall</span>
-		</h1>\t	
-		<div class="h-px w-16 bg-accent mt-6 mb-4"></div>
+		</h1>
+		<div class="mt-6 h-px w-10 bg-accent/70"></div>
 	</div>
-	
+
 	<!-- Bio -->
-	<p class="text-base leading-relaxed text-text-muted max-w-xs">
-		Software engineering lead and architect for Sam's Club and Walmart Global Tech. 
+	<p class="max-w-xs text-[0.9375rem] leading-relaxed text-text-muted">
+		Software engineering lead and architect for Sam's Club and Walmart Global Tech.
 		Building tools that help people work better and smarter.
 	</p>
-	
+
+	<!-- Primary Nav -->
+	<nav aria-label="Main navigation">
+		<ul class="space-y-1.5">
+			{
+				menuLinks.map(({ path, title }) => {
+					const isExternal = path.startsWith("http");
+					const isCurrent =
+						!isExternal && path !== "/#live" && pathname === (path === "/" ? "/" : `${path}/`);
+					return (
+						<li>
+							<a
+								aria-current={isCurrent ? "page" : undefined}
+								class:list={[
+									"social-link group",
+									isCurrent && "text-text [&_.nav-marker]:text-accent",
+								]}
+								href={path}
+								{...(isExternal ? { rel: "noreferrer", target: "_blank" } : {})}
+							>
+								<span
+									aria-hidden="true"
+									class="nav-marker w-3 font-mono text-xs text-text-subtle transition-colors group-hover:text-accent"
+								>
+									→
+								</span>
+								<span>{title}</span>
+								{isExternal && (
+									<span aria-hidden="true" class="font-mono text-xs text-text-subtle">
+										↗
+									</span>
+								)}
+							</a>
+						</li>
+					);
+				})
+			}
+		</ul>
+	</nav>
+
 	<!-- Social Links -->
 	<SocialList />
 </header>
