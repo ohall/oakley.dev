@@ -12,7 +12,7 @@ const meta = {
 <PageLayout meta={meta}>
 	<div class="space-y-6">
 		<h1 class="title">About</h1>
-		<p>
+		<p class="text-text-muted">
 			Hi, I’m a starter Astro. I’m particularly great for getting you started with your own blogging
 			website.
 		</p>
@@ -24,8 +24,8 @@ const meta = {
 				src={aboutImg}
 			/>
 		</div>
-		<p>Here are my some of my awesome built in features:</p>
-		<ul class="list-inside list-disc">
+		<p class="text-text-muted">Here are my some of my awesome built in features:</p>
+		<ul class="list-inside list-disc text-text-muted marker:text-text-subtle">
 			<li>I'm ultra fast as I'm a static site</li>
 			<li>I'm fully responsive</li>
 			<li>I come with a light and dark mode</li>
@@ -34,10 +34,10 @@ const meta = {
 			<li>Shiki code syntax highlighting</li>
 			<li>Satori for auto generating OG images for blog posts</li>
 		</ul>
-		<p>
+		<p class="text-text-muted">
 			Clone or fork my <a
 				aria-label="github repository"
-				class="cactus-link inline-block"
+				class="inline-block"
 				href="https://github.com/chrismwilliams/astro-cactus"
 				rel="noreferrer"
 				target="_blank">repo</a
