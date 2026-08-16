@@ -12,21 +12,21 @@ const meta = {
 ---
 
 <PageLayout meta={meta}>
-	<h1 class="title mb-6">Tags</h1>
-	<ul class="space-y-4">
+	<h1 class="title mb-10">Tags</h1>
+	<ul class="border-t border-border/60">
 		{
 			allTags.map(([tag, val]) => (
-				<li class="flex items-center gap-x-2">
+				<li class="flex items-baseline justify-between gap-x-4 border-b border-border/60 py-3.5">
 					<a
-						class="cactus-link inline-block"
+						class="post-title"
 						data-astro-prefetch
 						href={`/tags/${tag}/`}
 						title={`View posts with the tag: ${tag}`}
 					>
 						&#35;{tag}
 					</a>
-					<span class="inline-block">
-						- {val} Post{val > 1 && "s"}
+					<span class="font-mono text-xs text-text-subtle">
+						{val} post{val > 1 && "s"}
 					</span>
 				</li>
 			))
