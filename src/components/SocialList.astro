@@ -22,17 +22,21 @@ const socialLinks: {
 ];
 ---
 
-<nav aria-label="Social links" class="pt-2">
-	<ul class="space-y-2">
+<nav aria-label="Social links" class="border-t border-border/60 pt-6">
+	<ul class="space-y-1.5">
 		{socialLinks.map(({ friendlyName, link }) => (
 			<li>
-				<a 
+				<a
 					href={link}
 					target="_blank"
 					rel="noreferrer"
 					class="social-link group"
 				>
-					<span class="text-text-subtle group-hover:text-accent transition-colors">→</span>
+					<span
+						aria-hidden="true"
+						class="w-3 font-mono text-xs text-text-subtle transition-colors group-hover:text-accent"
+						>↗</span
+					>
 					<span>{friendlyName}</span>
 				</a>
 			</li>

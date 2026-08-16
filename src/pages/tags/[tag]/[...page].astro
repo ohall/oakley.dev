@@ -49,16 +49,16 @@ const paginationProps = {
 ---
 
 <PageLayout meta={meta}>
-	<h1 class="title mb-6 flex items-center">
-		<a class="text-accent sm:hover:underline" href="/tags/">Tags</a>
-		<span class="me-3 ms-2">→</span>
-		<span class="text-xl">#{tag}</span>
+	<h1 class="title mb-10 flex flex-wrap items-baseline gap-x-3">
+		<a class="text-text-muted transition-colors hover:text-accent" href="/tags/">Tags</a>
+		<span aria-hidden="true" class="text-text-subtle">/</span>
+		<span class="text-xl md:text-2xl">#{tag}</span>
 	</h1>
 	<section aria-label="Blog post list">
-		<ul class="space-y-8">
+		<ul class="border-t border-border/60">
 			{
 				page.data.map((p) => (
-					<li class="flex flex-col flex-wrap gap-2 sm:flex-row [&_q]:basis-full">
+					<li class="flex flex-col flex-wrap gap-2 border-b border-border/60 py-3.5 sm:flex-row sm:items-baseline [&_q]:mt-1 [&_q]:basis-full">
 						<PostPreview as="h2" post={p} withDesc />
 					</li>
 				))

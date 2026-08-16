@@ -7,27 +7,29 @@
 
 @layer base {
 	:root {
-		/* OKLCH Color System - Dark Mode Default */
-		/* Background: Deep ink with subtle blue tint */
-		--theme-bg: 14% 0.012 265;
-		--theme-bg-elevated: 20% 0.018 265;
-		--theme-bg-surface: 26% 0.022 265;
-		
-		/* Text: Warm-tinted for cohesion */
-		--theme-text: 94% 0.008 65;
-		--theme-text-muted: 72% 0.012 65;
-		--theme-text-subtle: 56% 0.01 65;
-		
-		/* Accent: Sage green - mature, confident */
-		--theme-accent: 65% 0.14 145;
-		--theme-accent-2: 75% 0.1 145;
-		
-		/* Link: Subtle blue-green */
-		--theme-link: 60% 0.12 195;
-		
-		/* Quote/Highlight: Soft amber */
-		--theme-quote: 70% 0.15 85;
-		
+		/* OKLCH Color System - Dark, near-black with a faint cool tint */
+		--theme-bg: 13.5% 0.006 260;
+		--theme-bg-elevated: 17% 0.007 260;
+		--theme-bg-surface: 21% 0.008 260;
+
+		/* Text: warm off-white, stepping down through muted grays */
+		--theme-text: 93% 0.006 70;
+		--theme-text-muted: 70% 0.009 70;
+		--theme-text-subtle: 58% 0.008 70;
+
+		/* Accent: one restrained, low-saturation cool indigo */
+		--theme-accent: 74% 0.085 275;
+		--theme-accent-2: 80% 0.05 275;
+
+		/* Link: matches the accent */
+		--theme-link: 74% 0.085 275;
+
+		/* Quote/Highlight: soft amber */
+		--theme-quote: 78% 0.08 85;
+
+		/* Hairline borders */
+		--theme-border: 24.5% 0.007 260;
+
 		/* Motion Easings */
 		--ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 		--ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
@@ -37,54 +39,74 @@
 
 @layer base {
 	* {
-		@apply border-[oklch(30%_0.02_265)];
+		@apply border-border;
 	}
-	
+
 	html {
 		@apply scroll-smooth;
 		font-feature-settings: "kern" 1, "liga" 1;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
 	}
-	
+
 	body {
-		@apply bg-[oklch(var(--theme-bg))] text-[oklch(var(--theme-text))];
+		@apply bg-bg text-text;
 		font-family: 'Source Serif 4', Georgia, serif;
 		font-size: 1.0625rem;
-		line-height: 1.65;
+		line-height: 1.7;
 	}
-	
+
+	/* Very subtle cool light falling from the top of the page */
+	body::before {
+		content: "";
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		background: radial-gradient(
+			ellipse 90% 55% at 50% -20%,
+			oklch(var(--theme-accent) / 0.045),
+			transparent 70%
+		);
+	}
+
 	/* Display Typography */
 	h1, h2, h3, h4, h5, h6 {
 		font-family: 'Space Grotesk', system-ui, sans-serif;
 		font-weight: 600;
 		letter-spacing: -0.02em;
-		line-height: 1.1;
+		line-height: 1.15;
 	}
-	
+
 	/* Selection */
 	::selection {
-		background: oklch(65% 0.14 145 / 0.3);
-		color: oklch(94% 0.008 65);
+		background: oklch(var(--theme-accent) / 0.25);
+		color: oklch(var(--theme-text));
 	}
-	
+
 	/* Focus States */
 	:focus-visible {
-		outline: 2px solid oklch(65% 0.14 145);
-		outline-offset: 2px;
+		outline: 1.5px solid oklch(var(--theme-accent));
+		outline-offset: 3px;
+		border-radius: 2px;
 	}
-	
+
 	/* Links */
 	a {
 		@apply underline underline-offset-2;
-		text-decoration-color: oklch(56% 0.01 65 / 0.5);
-		transition: text-decoration-color 0.15s var(--ease-out-quart);
+		text-decoration-color: oklch(var(--theme-text-subtle) / 0.5);
+		text-decoration-thickness: 1px;
+		transition: color 0.15s var(--ease-out-quart), text-decoration-color 0.15s var(--ease-out-quart);
 	}
-	
+
 	a:hover {
-		text-decoration-color: oklch(65% 0.14 145);
+		text-decoration-color: oklch(var(--theme-accent));
 	}
-	
+
+	hr {
+		@apply border-border;
+	}
+
 	/* Tabular numbers for dates */
 	time, .tabular {
 		font-variant-numeric: tabular-nums;
@@ -92,54 +114,86 @@
 }
 
 @layer components {
-	/* Post list item */
+	/* Post list item: quiet rows with hairline separators */
 	.post-item {
-		@apply grid gap-x-6 gap-y-1;
+		@apply grid items-baseline gap-x-5 gap-y-1 border-b border-border/60 py-3.5;
 		grid-template-columns: auto 1fr;
-		align-items: baseline;
 	}
-	
+
 	.post-date {
-		@apply text-sm;
+		@apply font-mono text-xs;
 		color: oklch(var(--theme-text-subtle));
 		font-variant-numeric: tabular-nums;
-		min-width: 6ch;
+		min-width: 8ch;
 	}
-	
+
 	.post-title {
 		font-family: 'Space Grotesk', system-ui, sans-serif;
 		font-weight: 500;
-		font-size: 1.125rem;
+		font-size: 1rem;
+		letter-spacing: -0.01em;
 		@apply no-underline;
 		color: oklch(var(--theme-text));
-		transition: transform 0.2s var(--ease-out-quart), color 0.2s var(--ease-out-quart);
+		transition: color 0.15s var(--ease-out-quart), transform 0.2s var(--ease-out-quart);
 	}
-	
+
 	.post-title:hover {
 		color: oklch(var(--theme-accent));
-		transform: translateX(2px);
+		transform: translateX(3px);
 	}
-	
-	/* Section titles */
+
+	/* Section titles: small uppercase kickers */
 	.section-title {
 		font-family: 'Space Grotesk', system-ui, sans-serif;
 		font-size: 0.75rem;
-		font-weight: 600;
+		font-weight: 500;
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: oklch(var(--theme-text-muted));
-		margin-bottom: 1.5rem;
+		letter-spacing: 0.1em;
+		color: oklch(var(--theme-text-subtle));
+		margin-bottom: 1.25rem;
 	}
-	
-	/* Social links */
+
+	/* Social & quiet navigation links */
 	.social-link {
-		@apply flex items-center gap-2 text-sm no-underline;
+		@apply flex items-center gap-2.5 text-sm no-underline;
 		color: oklch(var(--theme-text-muted));
 		transition: color 0.15s var(--ease-out-quart);
 	}
-	
+
 	.social-link:hover {
 		color: oklch(var(--theme-text));
+	}
+
+	/* Quiet bordered chip for tags */
+	.chip {
+		@apply inline-flex items-center rounded-full border border-border px-2.5 py-0.5 font-mono text-xs no-underline;
+		color: oklch(var(--theme-text-muted));
+		transition: color 0.15s var(--ease-out-quart), border-color 0.15s var(--ease-out-quart);
+	}
+
+	.chip:hover {
+		color: oklch(var(--theme-accent));
+		border-color: oklch(var(--theme-accent) / 0.5);
+	}
+
+	/* Understated link with a nudging arrow */
+	.arrow-link {
+		@apply inline-flex items-center gap-1.5 text-sm no-underline;
+		color: oklch(var(--theme-text-muted));
+		transition: color 0.15s var(--ease-out-quart);
+	}
+
+	.arrow-link .arrow {
+		display: inline-block;
+		transition: transform 0.2s var(--ease-out-quart);
+	}
+
+	.arrow-link:hover {
+		color: oklch(var(--theme-accent));
+	}
+
+	.arrow-link:hover .arrow {
+		transform: translateX(3px);
 	}
 }
 
