@@ -49,7 +49,7 @@
 		"autoprefixer": "^10.6.1",
 		"pagefind": "^1.5.2",
 		"prettier": "^3.9.9",
-		"prettier-plugin-astro": "0.14.1",
+		"prettier-plugin-astro": "1.1.0",
 		"prettier-plugin-tailwindcss": "^0.8.1",
 		"reading-time": "^1.5.0",
 		"remark-unwrap-images": "^4.0.0",
