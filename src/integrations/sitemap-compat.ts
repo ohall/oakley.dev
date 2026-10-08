@@ -210,10 +210,9 @@ export default function sitemapCompat(options?: Record<string, unknown>): AstroI
 								...(opts.namespaces ? { namespaces: opts.namespaces } : {}),
 							};
 
-							await writeSitemapChunk(
-								chunkConfig,
-								resolvedConfig,
-							);
+							// @astrojs/sitemap 3.7.4 dropped the astroConfig argument (and its trailing-slash
+							// rewrite for `trailingSlash: "never"` / `build.format: "file"`, neither of which this site uses).
+							await writeSitemapChunk(chunkConfig);
 							logger.info(`\`${outFile}\` created at \`${path.relative(process.cwd(), destDir)}\``);
 							return;
 						} catch (err) {
@@ -235,7 +234,7 @@ export default function sitemapCompat(options?: Record<string, unknown>): AstroI
 						...(opts.namespaces ? { namespaces: opts.namespaces } : {}),
 					};
 
-					await writeSitemap(sitemapConfig, resolvedConfig);
+					await writeSitemap(sitemapConfig);
 					logger.info(`\`${outFile}\` created at \`${path.relative(process.cwd(), destDir)}\``);
 				} catch (err) {
 					if (isZodErrorLike(err)) {
