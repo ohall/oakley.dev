@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import mdx from "@astrojs/mdx";
-import tailwind from "@astrojs/tailwind";
 import expressiveCode from "astro-expressive-code";
 import icon from "astro-icon";
 import robotsTxt from "astro-robots-txt";
@@ -27,10 +26,6 @@ export default defineConfig({
 	integrations: [
 		expressiveCode(expressiveCodeOptions),
 		icon(),
-		tailwind({
-			applyBaseStyles: false,
-			nesting: true,
-		}),
 		sitemap(),
 		mdx(),
 		robotsTxt(),
