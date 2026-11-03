@@ -6,6 +6,8 @@ module.exports = {
 	tabWidth: 2,
 	useTabs: true,
 	plugins: ["prettier-plugin-astro", "prettier-plugin-tailwindcss" /* Must come last */],
+	// Tailwind v4 reads theme and class order from the CSS entry instead of a JS config.
+	tailwindStylesheet: "./src/styles/global.css",
 	overrides: [
 		{
 			files: "**/*.astro",
