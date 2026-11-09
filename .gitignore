@@ -115,3 +115,7 @@ AGENT_TOKEN*
 VIEWER_TOKEN*
 # Tracked project config and test fixtures
 !.npmrc
+
+# Claude Code local permissions. "Yes, and don't ask again" writes approved
+# shell commands into this file, and those commands can contain secrets.
+.claude/settings.local.json
