@@ -1,9 +1,54 @@
 /* Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap")
+	layer(base);
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@config "../../tailwind.config.ts";
+
+/*
+  v3 font-size utilities used absolute line-heights, which descendants inherit
+  as a length. v4 uses unitless ratios, so a child with a different font-size
+  gets a different line box. Restore the v3 lengths.
+*/
+@theme {
+	--text-xs--line-height: 1rem;
+	--text-sm--line-height: 1.25rem;
+	--text-base--line-height: 1.5rem;
+	--text-lg--line-height: 1.75rem;
+	--text-xl--line-height: 1.75rem;
+	--text-2xl--line-height: 2rem;
+	--text-3xl--line-height: 2.25rem;
+	--text-4xl--line-height: 2.5rem;
+}
+
+/*
+  Tailwind v4 Preflight defaults that differ from v3. These keep borders,
+  placeholders, buttons, and dialogs looking the way they did before.
+*/
+@layer base {
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: var(--color-gray-200, currentcolor);
+	}
+
+	input::placeholder,
+	textarea::placeholder {
+		color: var(--color-gray-400);
+	}
+
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+
+	dialog {
+		margin: auto;
+	}
+}
 
 @layer base {
 	:root {
@@ -44,14 +89,16 @@
 
 	html {
 		@apply scroll-smooth;
-		font-feature-settings: "kern" 1, "liga" 1;
+		font-feature-settings:
+			"kern" 1,
+			"liga" 1;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
 	}
 
 	body {
 		@apply bg-bg text-text;
-		font-family: 'Source Serif 4', Georgia, serif;
+		font-family: "Source Serif 4", Georgia, serif;
 		font-size: 1.0625rem;
 		line-height: 1.7;
 	}
@@ -71,8 +118,13 @@
 	}
 
 	/* Display Typography */
-	h1, h2, h3, h4, h5, h6 {
-		font-family: 'Space Grotesk', system-ui, sans-serif;
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: "Space Grotesk", system-ui, sans-serif;
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		line-height: 1.15;
@@ -96,7 +148,9 @@
 		@apply underline underline-offset-2;
 		text-decoration-color: oklch(var(--theme-text-subtle) / 0.5);
 		text-decoration-thickness: 1px;
-		transition: color 0.15s var(--ease-out-quart), text-decoration-color 0.15s var(--ease-out-quart);
+		transition:
+			color 0.15s var(--ease-out-quart),
+			text-decoration-color 0.15s var(--ease-out-quart);
 	}
 
 	a:hover {
@@ -108,7 +162,8 @@
 	}
 
 	/* Tabular numbers for dates */
-	time, .tabular {
+	time,
+	.tabular {
 		font-variant-numeric: tabular-nums;
 	}
 }
@@ -128,13 +183,15 @@
 	}
 
 	.post-title {
-		font-family: 'Space Grotesk', system-ui, sans-serif;
+		font-family: "Space Grotesk", system-ui, sans-serif;
 		font-weight: 500;
 		font-size: 1rem;
 		letter-spacing: -0.01em;
 		@apply no-underline;
 		color: oklch(var(--theme-text));
-		transition: color 0.15s var(--ease-out-quart), transform 0.2s var(--ease-out-quart);
+		transition:
+			color 0.15s var(--ease-out-quart),
+			transform 0.2s var(--ease-out-quart);
 	}
 
 	.post-title:hover {
@@ -144,7 +201,7 @@
 
 	/* Section titles: small uppercase kickers */
 	.section-title {
-		font-family: 'Space Grotesk', system-ui, sans-serif;
+		font-family: "Space Grotesk", system-ui, sans-serif;
 		font-size: 0.75rem;
 		font-weight: 500;
 		text-transform: uppercase;
@@ -168,7 +225,9 @@
 	.chip {
 		@apply inline-flex items-center rounded-full border border-border px-2.5 py-0.5 font-mono text-xs no-underline;
 		color: oklch(var(--theme-text-muted));
-		transition: color 0.15s var(--ease-out-quart), border-color 0.15s var(--ease-out-quart);
+		transition:
+			color 0.15s var(--ease-out-quart),
+			border-color 0.15s var(--ease-out-quart);
 	}
 
 	.chip:hover {
@@ -200,7 +259,9 @@
 @layer utilities {
 	/* Reduced motion */
 	@media (prefers-reduced-motion: reduce) {
-		*, *::before, *::after {
+		*,
+		*::before,
+		*::after {
 			animation-duration: 0.01ms !important;
 			animation-iteration-count: 1 !important;
 			transition-duration: 0.01ms !important;

@@ -1,3 +1,4 @@
+import typography from "@tailwindcss/typography";
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 
@@ -6,18 +7,11 @@ export default {
 		"./src/**/*.{astro,html,js,jsx,md,svelte,ts,tsx,vue}",
 		"!./src/pages/og-image/[slug].png.ts",
 	],
-	corePlugins: {
-		borderOpacity: false,
-		fontVariantNumeric: false,
-		ringOffsetColor: false,
-		ringOffsetWidth: false,
-		scrollSnapType: false,
-		textOpacity: false,
-		touchAction: false,
-	},
+	// v4 dropped `corePlugins`. Those utilities were disabled only to shrink the
+	// v3 stylesheet; v4 emits utilities on demand, so unused ones are omitted.
 	darkMode: "class",
 	plugins: [
-		require("@tailwindcss/typography"),
+		typography,
 		plugin(({ addComponents }) => {
 			addComponents({
 				".title": {

@@ -8,7 +8,11 @@ const pathname = Astro.url.pathname;
 <header class="space-y-8">
 	<!-- Name Block -->
 	<div>
-		<h1 class="font-display text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
+		{/*
+			md:leading-none keeps the desktop line-height at 1. Tailwind v3's md:text-5xl
+			utility set line-height itself and overrode leading-[1.05]; v4 composes them.
+		*/}
+		<h1 class="font-display text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl md:leading-none">
 			<span class="block">Oakley</span>
 			<span class="block text-text-muted">Hall</span>
 		</h1>

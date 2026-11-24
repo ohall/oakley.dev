@@ -16,7 +16,7 @@ const postDate = getPostSortDate(post);
 <FormattedDate class="post-date min-w-[120px]" date={postDate} />
 <Tag>
 	{post.data.draft && <span class="font-mono text-xs text-quote">(Draft) </span>}
-	<a class="post-title" data-astro-prefetch href={`/posts/${post.slug}/`}>
+	<a class="post-title" data-astro-prefetch href={`/posts/${post.id}/`}>
 		{post.data.title}
 	</a>
 </Tag>
