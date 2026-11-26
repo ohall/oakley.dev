@@ -14,7 +14,8 @@ export const siteConfig: SiteConfig = {
 		},
 	},
 	// Used as the default description meta property and webmanifest description
-	description: "Software engineering lead and architect.",
+	description:
+		"Oakley Hall, Principal AI Developer Experience Architect at SentinelOne. Previously Distinguished Architect at Walmart Global Tech.",
 	// HTML lang property, found in src/layouts/Base.astro L:18 & astro.config.ts L:48
 	lang: "en-GB",
 	// Meta property, found in src/components/BaseHead.astro L:42
